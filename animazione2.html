@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Animazione Scroll Three.js</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; overflow-x: hidden; }
+    canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .spacer { height: 150vh; background: white; }
+    .content { position: relative; height: 200vh; text-align: center; background: white; padding-top: 100vh; }
+  </style>
+</head>
+<body>
+  <div class="spacer"></div>
+  <div class="content">
+    <h1>Prova testo:</h1>
+    <h2>testo</h2>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js",
+        "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.2/index.js",
+        "ScrollTrigger": "https://cdn.jsdelivr.net/npm/gsap@3.12.2/ScrollTrigger.js",
+        "GLTFLoader": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/loaders/GLTFLoader.js",
+        "DRACOLoader": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/loaders/DRACOLoader.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'GLTFLoader';
+    import { DRACOLoader } from 'DRACOLoader';
+    import gsap from 'gsap';
+    import { ScrollTrigger } from 'ScrollTrigger';
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const scene = new THREE.Scene();
+    let camera;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    // Aggiunta di una Environment Map per le riflessioni
+    const loaderCube = new THREE.CubeTextureLoader();
+    const envMap = loaderCube.load([
+      'https://threejs.org/examples/textures/cube/Bridge2/posx.jpg',
+      'https://threejs.org/examples/textures/cube/Bridge2/negx.jpg',
+      'https://threejs.org/examples/textures/cube/Bridge2/posy.jpg',
+      'https://threejs.org/examples/textures/cube/Bridge2/negy.jpg',
+      'https://threejs.org/examples/textures/cube/Bridge2/posz.jpg',
+      'https://threejs.org/examples/textures/cube/Bridge2/negz.jpg'
+    ]);
+    scene.environment = envMap;
+    
+
+    // scene.background = envMap; // attiva se vuoi vedere l'ambiente
+
+
+    // Caricamento modello .glb con DRACO
+    const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/libs/draco/');
+    loader.setDRACOLoader(dracoLoader);
+
+    let model, mixer, action;
+
+    loader.load('assets/OakleyAnimV1.glb', (gltf) => {
+      model = gltf.scene;
+      scene.add(model);
+
+      // Usa la camera interna al glb se disponibile
+      if (gltf.cameras && gltf.cameras.length > 0) {
+        camera = gltf.cameras[0];
+      } else {
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 0);
+      }
+
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          // Migliora l'interazione con l'envMap se necessario
+          if (child.material && child.material.envMap === null) {
+            child.material.envMap = envMap;
+            child.material.envMapIntensity = 1;
+            child.material.needsUpdate = true;
+          }
+        }
+      });
+
+      mixer = new THREE.AnimationMixer(model);
+      action = mixer.clipAction(gltf.animations[0]);
+      action.play();
+      action.paused = true;
+
+      setModelParams();
+    });
+
+
+    window.addEventListener('resize', () => {
+      setModelParams();
+      if (camera) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+      }
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (mixer) mixer.update(clock.getDelta());
+      if (camera) renderer.render(scene, camera);
+    }
+    animate();
+
+    ScrollTrigger.create({
+      trigger: '.content',
+      start: 'top bottom',
+      end: 'bottom top',
+      scrub: 1,
+      onUpdate: (self) => {
+        if (action) {
+          action.time = action.getClip().duration * self.progress;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lastre di Vetro con Scroll</title>
+    <style>
+        body { margin: 0; height: 300vh; overflow-x: hidden; background-color: black; }
+        canvas { display: block; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // Creazione scena
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        // Vista isometrica
+        camera.position.set(10, 10, 10); // Posizione della camera per vista isometrica
+        camera.lookAt(0, 0, 0); // Punta verso il centro della scena
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // Luce principale
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 5, 5);
+        light.castShadow = true;
+        scene.add(light);
+
+        // Luce ambientale
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambientLight);
+
+        // Caricamento ambiente riflettente (HDRI o cubemap)
+        const textureLoader = new THREE.CubeTextureLoader();
+        const reflectionTexture = textureLoader.load([
+            'https://threejs.org/examples/textures/cube/Bridge2/posx.jpg',
+            'https://threejs.org/examples/textures/cube/Bridge2/negx.jpg',
+            'https://threejs.org/examples/textures/cube/Bridge2/posy.jpg',
+            'https://threejs.org/examples/textures/cube/Bridge2/negy.jpg',
+            'https://threejs.org/examples/textures/cube/Bridge2/posz.jpg',
+            'https://threejs.org/examples/textures/cube/Bridge2/negz.jpg',
+        ]);
+        scene.background = reflectionTexture; // Aggiungi lo sfondo riflettente
+
+        // Materiale di vetro ultra realistico
+        const glassMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x99ccff,
+            metalness: 0.1,
+            roughness: 0.02,
+            transmission: 0.98,
+            ior: 1.52,
+            envMap: reflectionTexture,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.02,
+            thickness: 1.0,
+            attenuationColor: new THREE.Color(0x99ccff),
+            attenuationDistance: 0.8,
+        });
+
+        // Creazione delle lastre di vetro (cubi rettangolari)
+        const geometry = new THREE.BoxGeometry(3, 0.2, 5); // Lastre rettangolari (altezza ridotta)
+        const glass1 = new THREE.Mesh(geometry, glassMaterial);
+        const glass2 = new THREE.Mesh(geometry, glassMaterial);
+
+        // Posizione iniziale delle lastre (in alto a sinistra e in alto a destra)
+        glass1.position.set(-10, 10, 0); // Lastra in alto a sinistra
+        glass2.position.set(10, 10, 0); // Lastra in alto a destra
+
+        scene.add(glass1);
+        scene.add(glass2);
+
+        // Animazione basata sullo scroll
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            const scrollProgress = Math.min(scrollY / 500, 1); // Limita il progresso a 1
+
+            // Muovi le lastre verso il centro
+            glass1.position.x = -10 + scrollProgress * 10; // Da -10 a 0
+            glass1.position.y = 10 - scrollProgress * 10; // Da 10 a 0
+            glass2.position.x = 10 - scrollProgress * 10; // Da 10 a 0
+            glass2.position.y = 10 - scrollProgress * 10; // Da 10 a 0
+        });
+
+        // Animazione
+        const animate = () => {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        };
+        animate();
+
+        // Resize responsivo
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+
+</body>
+</html>
