@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>VR Portal Room</title>
+  <title>VR Portal Room - Real Window Effect</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -25,8 +25,9 @@
 
     let camera, renderer;
     let sceneA, sceneB, activeScene;
-    let portalCenterMesh;
+    let portalMesh;
     let switched = false;
+    let renderTarget;
 
     init();
     animate();
@@ -49,13 +50,6 @@
       addLights(sceneA);
       loadRoom(sceneA);
 
-      // Portale visivo (cubo)
-      const cubeGeo = new THREE.BoxGeometry(1, 2, 0.1);
-      const cubeMat = new THREE.MeshStandardMaterial({ color: 0xff00ff });
-      portalCenterMesh = new THREE.Mesh(cubeGeo, cubeMat);
-      portalCenterMesh.position.set(0, 1.6, -1.5); // davanti all'utente
-      sceneA.add(portalCenterMesh);
-
       // Scene B (ambiente alternativo)
       sceneB = new THREE.Scene();
       sceneB.background = new THREE.Color(0x003366);
@@ -65,6 +59,16 @@
         new THREE.MeshStandardMaterial({ color: 0x225577, side: THREE.BackSide })
       );
       sceneB.add(altRoom);
+
+      // Render Target
+      renderTarget = new THREE.WebGLRenderTarget(512, 512);
+
+      // Portale - mostra già il mondo alternativo
+      const portalGeo = new THREE.PlaneGeometry(1, 2);
+      const portalMat = new THREE.MeshBasicMaterial({ map: renderTarget.texture });
+      portalMesh = new THREE.Mesh(portalGeo, portalMat);
+      portalMesh.position.set(0, 1.6, -1.5);
+      sceneA.add(portalMesh);
 
       activeScene = sceneA;
 
@@ -88,7 +92,7 @@
       loader.setDRACOLoader(dracoLoader);
 
       loader.load('assets/Stanza-prova-1.glb', function (gltf) {
-        gltf.scene.scale.set(2, 2, 2);
+        gltf.scene.scale.set(1, 1, 1);
         scene.add(gltf.scene);
       }, undefined, function (error) {
         console.error('Errore nel caricamento GLB:', error);
@@ -103,9 +107,17 @@
 
     function animate() {
       renderer.setAnimationLoop(() => {
+        updatePortalView();
         checkPortalEntry();
         renderer.render(activeScene, camera);
       });
+    }
+
+    function updatePortalView() {
+      // Renderizziamo sceneB dentro il renderTarget
+      renderer.setRenderTarget(renderTarget);
+      renderer.render(sceneB, camera);
+      renderer.setRenderTarget(null); // ritorna al rendering standard
     }
 
     function checkPortalEntry() {
@@ -114,7 +126,7 @@
       const camPos = new THREE.Vector3();
       camera.getWorldPosition(camPos);
 
-      const portalPos = portalCenterMesh.position.clone();
+      const portalPos = portalMesh.position.clone();
       const distance = camPos.distanceTo(portalPos);
 
       if (distance < 0.5) {
