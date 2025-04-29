@@ -88,7 +88,7 @@
       loader.setDRACOLoader(dracoLoader);
 
       loader.load('assets/Stanza-prova-1.glb', function (gltf) {
-        gltf.scene.scale.set(1, 1, 1);
+        gltf.scene.scale.set(2, 2, 2);
         scene.add(gltf.scene);
       }, undefined, function (error) {
         console.error('Errore nel caricamento GLB:', error);
