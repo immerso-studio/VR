@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vetro Realistico + HDRI Locale</title>
+  <style>
+    body { margin: 0; font-family: Neue Montreal, sans-serif; overflow-x: hidden; }
+    canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .content { position: relative; }
+
+    @font-face {
+      font-family: 'Neue Montreal';
+      src: url('assets/fonts/NeueMontreal-Regular.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Neue Montreal';
+      src: url('assets/fonts/NeueMontreal-Bold.otf') format('opentype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Neue Montreal';
+      src: url('assets/fonts/NeueMontreal-Light.otf') format('opentype');
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Neue Montreal';
+      src: url('assets/fonts/NeueMontreal-Italic.otf') format('opentype');
+      font-weight: 400;
+      font-style: italic;
+      font-display: swap;
+    }
+
+
+    .text-section-1 {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 5vw;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+      font-weight: 200;
+    }
+
+    .text-section-1 h2 {
+      font-size: 3rem;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      font-weight: 400;
+    }
+
+    .text-section-2 {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 5vw;
+      text-align: left;
+      margin: 0 auto;
+      font-weight: 200;
+    }
+
+    .text-section-2 h2 {
+      font-size: 3rem;
+      line-height: 1.1;
+      margin-bottom: 0.5rem;
+      font-weight: 400;
+    }
+
+    .text-section-2 p {
+      font-size: 1.2rem;
+      line-height: 1.5;
+      max-width: 400px;
+      font-weight: 400;
+    }
+
+    .text-section-3 {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 5vw;
+      text-align: left;
+      margin: 0 auto;
+      font-weight: 200;
+    }
+
+    .text-section-3 h2 {
+      font-size: 3rem;
+      line-height: 1.1;
+      margin-bottom: 0.5rem;
+      font-weight: 400;
+    }
+
+    .text-section-3 p {
+      font-size: 1.2rem;
+      line-height: 1.5;
+      max-width: 400px;
+      font-weight: 400;
+    }
+
+
+
+    span.blue {
+      color: #037FE4;
+    }
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 1rem;
+      text-decoration: none;
+      color: black;
+      font-weight: 400;
+      background-color: #f0f0f0;
+      padding: 10px 16px;
+      border-radius: 100px;
+      transition: background-color 0.3s ease;
+      width: auto;         /* 👈 assicura che non si allarghi */
+      max-width: fit-content; /* 👈 opzionale per sicurezza */
+    }
+
+
+    a:hover {
+      background-color: #e0e0e0; /* più scuro al passaggio */
+    }
+
+    .arrow {
+      display: inline-block;
+      transform: translateY(1px);
+    }
+
+    @media (min-width: 768px) {
+      .text-section-2 {
+        margin-left: auto;
+        margin-right: 0;
+        padding-right: 0vw; /* aumenta per spingerla ancora più a destra */
+        text-align: left;
+        max-width: 500px;
+      }
+
+      .text-section-3 {
+        margin-left: 0;
+        margin-right: auto;
+        text-align: left;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="content">
+    <section class="text-section-1" data-frame="0">
+      <h2><span class="blue">Innoviamo</span> creando soluzioni<br/> che uniscono bellezza e funzionalità.</h2>
+    </section>
+    <section class="text-section-2" data-frame="1">
+      <h2><span class="blue">Protezione</span> totale,<br/> dal freddo al sole.</h2>
+      <p>Le nostre vetrate garantiscono un isolamento perfetto, proteggono il comfort degli ambienti interni e dai rumori. Per un comfort senza compromessi.</p>
+      <a href="#">Scopri <span class="arrow">➔</span></a>
+    </section>
+    <section class="text-section-3" data-frame="2">
+      <h2><span class="blue">Design</span> che parla,<br/> innovazione che dura.</h2>
+      <p>Ogni prodotto è una combinazione di eleganza e performance, pensato per durare nel tempo.</p>
+      <a href="#">Scopri <span class="arrow">➔</span></a>
+    </section>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js",
+        "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.2/index.js",
+        "ScrollTrigger": "https://cdn.jsdelivr.net/npm/gsap@3.12.2/ScrollTrigger.js",
+        "GLTFLoader": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/loaders/GLTFLoader.js",
+        "DRACOLoader": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/loaders/DRACOLoader.js",
+        "RGBELoader": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/loaders/RGBELoader.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'GLTFLoader';
+    import { DRACOLoader } from 'DRACOLoader';
+    import { RGBELoader } from 'RGBELoader';
+    import gsap from 'gsap';
+    import { ScrollTrigger } from 'ScrollTrigger';
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const scene = new THREE.Scene();
+    let camera, cameraRig;
+    let envMap;
+
+    const renderer = new THREE.WebGLRenderer({ 
+      alpha: true, 
+      antialias: true,
+      powerPreference: "high-performance"
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 2;
+    renderer.physicallyCorrectLights = true;
+    document.body.appendChild(renderer.domElement);
+
+    const rgbeLoader = new RGBELoader();
+    rgbeLoader.setDataType(THREE.FloatType);
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+
+    rgbeLoader.load('assets/hdris/Dreamy6.hdr', (hdrTexture) => {
+      envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
+      scene.environment = envMap;
+
+
+      hdrTexture.dispose();
+      pmremGenerator.dispose();
+      initModel();
+    });
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    dirLight.position.set(5, 10, 7);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    scene.add(dirLight);
+
+    const fillLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    fillLight.position.set(-5, 5, 5);
+    scene.add(fillLight);
+
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    backLight.position.set(0, 5, -10);
+    scene.add(backLight);
+
+    const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/libs/draco/');
+    loader.setDRACOLoader(dracoLoader);
+
+    let model, mixer;
+    const actions = [];
+    let mouseX = 0;
+    let mouseY = 0;
+
+    function initModel() {
+      loader.load('assets/Prova silicone.glb', (gltf) => {
+        model = gltf.scene;
+        scene.add(model);
+
+        camera = gltf.cameras?.[0];
+        cameraRig = new THREE.Group();
+        cameraRig.add(camera);
+        scene.add(cameraRig);
+        cameraRig.position.y -= 10; // o qualsiasi valore che funzioni bene per te
+
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        mixer = new THREE.AnimationMixer(model);
+        gltf.animations.forEach((clip) => {
+          const tracks = clip.tracks || [];
+          const affectsCamera = tracks.some(track => track.name.toLowerCase().includes('camera'));
+          if (!affectsCamera) {
+            const action = mixer.clipAction(clip);
+            action.play();
+            action.paused = true;
+            actions.push(action);
+          }
+        });
+
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+              const glassMaterial = new THREE.MeshPhysicalMaterial({
+                transmission: 1,
+                transparent: true,
+                opacity: 0.9,
+                roughness: 0.05,
+                metalness: 0.0,
+                ior: 1.52,
+                thickness: 2,
+                specularIntensity: 1.0,
+                specularColor: new THREE.Color(0x88ccee),
+                color: new THREE.Color(0x88ccee),
+                envMap: envMap,
+                envMapIntensity: 2,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.05,
+                sheen: 1,
+                sheenColor: new THREE.Color(0x88ccee),
+                sheenRoughness: 0.2,
+                attenuationDistance: 1,
+                attenuationColor: new THREE.Color(0x037FE4),
+                reflectivity: 3,
+                iridescence: 0.5,
+                iridescenceIOR: 1.3
+              });
+            child.material = glassMaterial;
+          }
+        });
+
+        setupScrollTrigger();
+      });
+    }
+
+    function setupScrollTrigger() {
+      const duration = actions[0]?.getClip().duration || 1;
+
+      ScrollTrigger.create({
+        trigger: '.content',
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 1,
+        onUpdate: (self) => {
+          actions.forEach((action) => {
+            action.time = duration * self.progress;
+          });
+        }
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      if (camera) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+      }
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    if (window.innerWidth >= 768) {
+      window.addEventListener('mousemove', (event) => {
+        const halfW = window.innerWidth / 2;
+        const halfH = window.innerHeight / 2;
+        mouseX = (event.clientX - halfW) / halfW;
+        mouseY = (event.clientY - halfH) / halfH;
+      });
+    }
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
+      if (mixer) mixer.update(delta);
+
+      if (cameraRig) {
+        const maxOffsetX = 1.2;
+        const maxOffsetY = 0.6;
+        const targetX = THREE.MathUtils.clamp(mouseX * maxOffsetX, -maxOffsetX, maxOffsetX);
+        const targetY = THREE.MathUtils.clamp(mouseY * maxOffsetY, -maxOffsetY, maxOffsetY);
+
+        cameraRig.position.x += (targetX - cameraRig.position.x) * 0.05;
+        cameraRig.position.y += (targetY - cameraRig.position.y) * 0.05;
+      }
+
+      if (camera) {
+        renderer.render(scene, camera);
+      }
+
+      dirLight.position.x = 5 + Math.sin(elapsed * 0.2) * 0.5;
+      dirLight.position.z = 7 + Math.cos(elapsed * 0.3) * 0.5;
+    }
+
+    animate();
+  </script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vetro Realistico + HDRI Locale</title>
+  <style>
+    body { margin: 0; font-family: Helvetica, sans-serif; overflow-x: hidden; }
+    canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .content { position: relative; }
+
+    .text-section {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 5vw;
+      text-align: left;
+      max-width: 800px;
+      margin: 0 auto;
+      font-weight: 200;
+    }
+
+    .text-section h2 {
+      font-size: 3rem;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+      font-weight: 200;
+    }
+
+    .text-section p {
+      font-size: 1.2rem;
+      line-height: 1.5;
+    }
+
+    a {
+      font-size: 1rem;
+      text-decoration: none;
+      color: black;
+      font-weight: bold;
+    }
+
+    span.blue {
+      color: #2da8ff;
+    }
+
+    .arrow {
+      display: inline-block;
+      transform: translateY(1px);
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <section class="text-section" data-frame="0">
+      <h2><span class="blue">innoviamo</span> creando soluzioni<br/> che uniscono bellezza e <em>funzionalità</em>.</h2>
+    </section>
+
+    <section class="text-section" data-frame="1">
+      <h2><span class="blue">Protezione</span> totale,<br/> dal freddo al sole.</h2>
+      <p>Le nostre vetrate garantiscono un isolamento perfetto, proteggono il comfort degli ambienti interni e dai rumori. Per un comfort senza compromessi.</p>
+      <a href="#">Scopri <span class="arrow">➔</span></a>
+    </section>
+
+    <section class="text-section" data-frame="2">
+      <h2><span class="blue">Design</span> che parla,<br/> innovazione che dura.</h2>
+      <p>Ogni prodotto è una combinazione di eleganza e performance, pensato per durare nel tempo.</p>
+      <a href="#">Scopri <span class="arrow">➔</span></a>
+    </section>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js",
+        "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.2/index.js",
+        "ScrollTrigger": "https://cdn.jsdelivr.net/npm/gsap@3.12.2/ScrollTrigger.js",
+        "GLTFLoader": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/loaders/GLTFLoader.js",
+        "DRACOLoader": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/loaders/DRACOLoader.js",
+        "RGBELoader": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/loaders/RGBELoader.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'GLTFLoader';
+    import { DRACOLoader } from 'DRACOLoader';
+    import { RGBELoader } from 'RGBELoader';
+    import gsap from 'gsap';
+    import { ScrollTrigger } from 'ScrollTrigger';
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const scene = new THREE.Scene();
+    let camera;
+    let envMap;
+
+    const renderer = new THREE.WebGLRenderer({ 
+      alpha: true, 
+      antialias: true,
+      powerPreference: "high-performance"
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 2;
+    renderer.physicallyCorrectLights = true;
+    document.body.appendChild(renderer.domElement);
+
+    const rgbeLoader = new RGBELoader();
+    rgbeLoader.setDataType(THREE.FloatType);
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+
+    rgbeLoader.load('assets/hdris/mirrored_hall_4k.hdr', (hdrTexture) => {
+      envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
+      scene.environment = envMap;
+
+      hdrTexture.dispose();
+      pmremGenerator.dispose();
+      initModel();
+    });
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    dirLight.position.set(5, 10, 7);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    scene.add(dirLight);
+
+    const fillLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    fillLight.position.set(-5, 5, 5);
+    scene.add(fillLight);
+
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    backLight.position.set(0, 5, -10);
+    scene.add(backLight);
+
+    const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/libs/draco/');
+    loader.setDRACOLoader(dracoLoader);
+
+    let model, mixer;
+    const actions = [];
+
+    let mouseX = 0;
+    let mouseY = 0;
+
+    function initModel() {
+      loader.load('assets/prova vetri 2 telecamere.glb', (gltf) => {
+        model = gltf.scene;
+        scene.add(model);
+
+        // Usa la camera direttamente dal glb
+        camera = gltf.cameras?.[0];
+
+        scene.add(camera);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        // Evita che venga animata
+        mixer = new THREE.AnimationMixer(model);
+        gltf.animations.forEach((clip) => {
+          const tracks = clip.tracks || [];
+          const affectsCamera = tracks.some(track => track.name.toLowerCase().includes('camera'));
+          if (!affectsCamera) {
+            const action = mixer.clipAction(clip);
+            action.play();
+            action.paused = true;
+            actions.push(action);
+          }
+        });
+
+        // Applica materiali
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            const glassMaterial = new THREE.MeshPhysicalMaterial({
+              transmission: 1.0,
+              transparent: true,
+              opacity: 1,
+              roughness: 0.05,
+              metalness: 0.0,
+              ior: 1.52,
+              thickness: 2,
+              specularIntensity: 1.0,
+              specularColor: new THREE.Color(0x88ccee),
+              color: new THREE.Color(0x88ccee),
+              envMap: envMap,
+              envMapIntensity: 4,
+              clearcoat: 1.0,
+              clearcoatRoughness: 0.05,
+              sheen: 1.0,
+              sheenColor: new THREE.Color(0x88ccee),
+              sheenRoughness: 0.2,
+              attenuationDistance: 0.6,
+              attenuationColor: new THREE.Color(0x88ccee),
+              reflectivity: 2,
+              iridescence: 0.5,
+              iridescenceIOR: 1.3
+            });
+            child.material = glassMaterial;
+          }
+        });
+
+        setupScrollTrigger();
+      });
+    }
+
+    function setupScrollTrigger() {
+      const duration = actions[0]?.getClip().duration || 1;
+
+      ScrollTrigger.create({
+        trigger: '.content',
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 1,
+        onUpdate: (self) => {
+          actions.forEach((action) => {
+            action.time = duration * self.progress;
+          });
+        }
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      if (camera) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+      }
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    if (window.innerWidth >= 768) {
+      window.addEventListener('mousemove', (event) => {
+        const halfW = window.innerWidth / 2;
+        const halfH = window.innerHeight / 2;
+        mouseX = (event.clientX - halfW) / halfW;
+        mouseY = (event.clientY - halfH) / halfH;
+      });
+    }
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
+      if (mixer) mixer.update(delta);
+
+      if (camera) {
+        // Parallasse limitato
+        const maxOffsetX = 1.2;
+        const maxOffsetY = 0.6;
+        const targetX = THREE.MathUtils.clamp(mouseX * maxOffsetX, -maxOffsetX, maxOffsetX);
+        const targetY = THREE.MathUtils.clamp(mouseY * maxOffsetY, -maxOffsetY, maxOffsetY);
+
+        camera.position.x += (targetX - camera.position.x) * 0.05;
+        camera.position.y += (targetY - camera.position.y) * 0.05;
+
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        renderer.render(scene, camera);
+      }
+
+      dirLight.position.x = 5 + Math.sin(elapsed * 0.2) * 0.5;
+      dirLight.position.z = 7 + Math.cos(elapsed * 0.3) * 0.5;
+    }
+
+    animate();
+  </script>
+</body>
+</html>

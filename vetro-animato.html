@@ -81,7 +81,6 @@
       }
     }
   </script>
-
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'GLTFLoader';
@@ -96,8 +95,8 @@
     let camera;
     let envMap;
 
-    const renderer = new THREE.WebGLRenderer({ 
-      alpha: true, 
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
       antialias: true,
       powerPreference: "high-performance"
     });
@@ -119,7 +118,7 @@
       envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
       scene.environment = envMap;
       hdrTexture.dispose();
-      pmremGenerator.dispose(); // Solo dopo aver generato l'envMap
+      pmremGenerator.dispose();
       initModel();
     });
 
@@ -151,9 +150,9 @@
 
     function setCameraPositionByDevice() {
       if (window.innerWidth < 768) {
-        camera.position.set(0, 0, 8); // mobile più arretrata
+        camera.position.set(0, 0, 8);
       } else {
-        camera.position.set(0, 0, 5); // desktop default
+        camera.position.set(0, 0, 5);
       }
     }
 
@@ -232,7 +231,7 @@
       if (camera) {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-        setCameraPositionByDevice(); // aggiorna in base alla nuova larghezza
+        setCameraPositionByDevice();
       }
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
@@ -241,9 +240,11 @@
     function animate() {
       requestAnimationFrame(animate);
       if (mixer) mixer.update(clock.getDelta());
+
       const time = clock.getElapsedTime();
       dirLight.position.x = 5 + Math.sin(time * 0.2) * 0.5;
       dirLight.position.z = 7 + Math.cos(time * 0.3) * 0.5;
+
       if (camera) renderer.render(scene, camera);
     }
 
