@@ -28,7 +28,6 @@
     let portalCenterMesh;
     let switched = false;
     let secondRoomLoaded = false;
-    let portalRenderTarget;
 
     init();
     animate();
@@ -45,20 +44,18 @@
       camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
       camera.position.set(0, 1.6, 3);
 
-      // Portal render target
-      portalRenderTarget = new THREE.WebGLRenderTarget(1024, 1024);
-
       // Scene A (main room)
       sceneA = new THREE.Scene();
       sceneA.background = new THREE.Color(0x222222);
       addLights(sceneA);
       loadRoom(sceneA, 'assets/Stanza-prova-1.glb');
 
-      // Portal mesh (shows sceneB texture)
+      // Portale visivo (cubo)
       const cubeGeo = new THREE.BoxGeometry(1, 2, 0);
-      const cubeMat = new THREE.MeshBasicMaterial({
-        map: portalRenderTarget.texture,
-        side: THREE.DoubleSide
+      const cubeMat = new THREE.MeshStandardMaterial({ 
+        color: 0xff00ff,
+        transparent: true,
+        opacity: 0.7
       });
       portalCenterMesh = new THREE.Mesh(cubeGeo, cubeMat);
       portalCenterMesh.position.set(0, 1.6, -1.5);
@@ -68,8 +65,8 @@
       sceneB = new THREE.Scene();
       sceneB.background = new THREE.Color(0x003366);
       addLights(sceneB);
-
-      // Load second room
+      
+      // Carica la seconda stanza ma non renderizzarla ancora
       loadRoom(sceneB, 'assets/Stanza-prova-2.glb', () => {
         secondRoomLoaded = true;
       });
@@ -104,7 +101,8 @@
         });
 
         if (scene === sceneB) {
-          gltf.scene.position.set(0, 0, -5); // Offset second room
+          // 🎯 Modifica posizione stanza B
+          gltf.scene.position.set(0, 0, -5); 
         }
 
         scene.add(gltf.scene);
@@ -122,19 +120,7 @@
 
     function animate() {
       renderer.setAnimationLoop(() => {
-        if (secondRoomLoaded && !switched) {
-          // Render sceneB to the portal texture
-          renderer.setRenderTarget(portalRenderTarget);
-          renderer.render(sceneB, camera);
-          renderer.setRenderTarget(null);
-        }
-
         checkPortalEntry();
-
-        // Optional: make portal always face camera (uncomment if needed)
-        // portalCenterMesh.lookAt(camera.position);
-
-        // Render main scene
         renderer.render(activeScene, camera);
       });
     }
@@ -152,8 +138,8 @@
         console.log("✅ PORTALE ATTRAVERSATO - Mostro Stanza-prova-2.glb");
         switched = true;
         activeScene = sceneB;
-
-        // Move camera inside new room
+        
+        // Riposiziona la camera nella nuova stanza
         camera.position.set(0, 1.6, -3);
       }
     }
