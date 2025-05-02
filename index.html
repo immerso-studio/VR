@@ -37,6 +37,7 @@
     let sceneA, sceneB, activeScene;
     let portalCenterMesh;
     let switched = false;
+    let roomAObject = null; // 🔸 Per riferimento alla scena A
 
     init();
     animate();
@@ -71,7 +72,6 @@
       portalCenterMesh.position.set(0, 1.7, -2.8);
       sceneA.add(portalCenterMesh);
 
-
       // Door model around portal
       loadDoorModel(sceneA);
 
@@ -94,6 +94,17 @@
       });
 
       window.addEventListener('resize', onWindowResize);
+
+      // 🔸 Attiva animazione dopo 10 sec in VR
+      renderer.xr.addEventListener('sessionstart', () => {
+        console.log("🎮 VR session started");
+
+        setTimeout(() => {
+          if (roomAObject) {
+            animateRoomScale(roomAObject, new THREE.Vector3(10, 10, 10), 3); // 2 sec animazione
+          }
+        }, 10000); // ⏳ 10 sec delay
+      });
     }
 
     function addLights(scene) {
@@ -117,13 +128,13 @@
 
       loader.load('assets/Stanza-prova-1.glb', function (gltf) {
         gltf.scene.scale.set(2, 2, 2);
+        roomAObject = gltf.scene; // 🔸 salva il riferimento
         scene.add(gltf.scene);
       }, undefined, function (error) {
         console.error('Error loading GLB (Scene A):', error);
       });
     }
 
-    
     function loadAltRoom(scene) {
       const loader = new GLTFLoader();
       const dracoLoader = new DRACOLoader();
@@ -202,6 +213,21 @@
 
       const intensity = Math.max(0, (maxDistance - distance) / maxDistance);
       portalCenterMesh.material.emissiveIntensity = intensity * 2;
+    }
+
+    // 🔸 Animazione scala con interpolazione
+    function animateRoomScale(object, targetScale, duration) {
+      const initialScale = object.scale.clone();
+      const startTime = performance.now();
+
+      function update() {
+        const elapsed = (performance.now() - startTime) / 1000;
+        const t = Math.min(elapsed / duration, 1);
+        object.scale.lerpVectors(initialScale, targetScale, t);
+        if (t < 1) requestAnimationFrame(update);
+      }
+
+      update();
     }
   </script>
 </body>
