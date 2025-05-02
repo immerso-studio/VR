@@ -59,29 +59,22 @@
       addLights(sceneA);
       loadRoom(sceneA);
 
-      // Portal (cube)
-      const cubeGeo = new THREE.BoxGeometry(1, 2, 0.1);
+      // Portal (plane)
+      const cubeGeo = new THREE.BoxGeometry(1, 2, 0);
       const cubeMat = new THREE.MeshStandardMaterial({ 
-        color: 0xff00ff,
-        emissive: 0xff00ff,
+        color: 0x000000,
+        emissive: 0x000000,
         metalness: 0.5,
         roughness: 0.1
       });
       portalCenterMesh = new THREE.Mesh(cubeGeo, cubeMat);
-      portalCenterMesh.position.set(0, 1.6, -1.5); // In front of user
+      portalCenterMesh.position.set(0, 1, -1.9);
       sceneA.add(portalCenterMesh);
 
-      // Add a frame around the portal for better visibility
-      const frameGeo = new THREE.BoxGeometry(1.2, 2.2, 0.15);
-      const frameMat = new THREE.MeshBasicMaterial({ 
-        color: 0xffffff,
-        side: THREE.BackSide
-      });
-      const portalFrame = new THREE.Mesh(frameGeo, frameMat);
-      portalFrame.position.copy(portalCenterMesh.position);
-      sceneA.add(portalFrame);
+      // Door model around portal
+      loadDoorModel(sceneA);
 
-      // Scene B (alternate environment)
+      // Scene B
       sceneB = new THREE.Scene();
       sceneB.background = new THREE.Color(0x003366);
       addLights(sceneB);
@@ -89,7 +82,7 @@
 
       activeScene = sceneA;
 
-      // Add reset handler
+      // Reset handler
       window.addEventListener('keydown', (e) => {
         if (e.key === 'r' || e.key === 'R') {
           switched = false;
@@ -143,6 +136,22 @@
       });
     }
 
+    function loadDoorModel(scene) {
+      const loader = new GLTFLoader();
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      loader.setDRACOLoader(dracoLoader);
+
+      loader.load('assets/Porta.glb', function (gltf) {
+        const door = gltf.scene;
+        door.position.set(0, 0, 0); // Match portal position
+        door.scale.set(1, 1, 1); // Adjust if needed
+        scene.add(door);
+      }, undefined, function (error) {
+        console.error('Error loading door model:', error);
+      });
+    }
+
     function onWindowResize() {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -160,26 +169,17 @@
     function checkPortalEntry() {
       if (switched) return;
 
-      // Get the VR camera's position in world space
       const camPos = new THREE.Vector3();
       camera.getWorldPosition(camPos);
 
-      // Get the portal's position in world space
-      const portalPos = new THREE.Vector3();
-      portalCenterMesh.getWorldPosition(portalPos);
-
-      // Create a bounding box for the portal
       const portalBox = new THREE.Box3().setFromObject(portalCenterMesh);
-      
-      // Expand the box slightly for better detection
       portalBox.expandByScalar(0.2);
 
       if (portalBox.containsPoint(camPos)) {
         console.log("✅ PORTAL ENTERED");
         switched = true;
         activeScene = sceneB;
-        
-        // Add a small delay before allowing another switch
+
         setTimeout(() => {
           switched = false;
         }, 2000);
@@ -189,23 +189,17 @@
     function updatePortalEffect() {
       if (switched || !portalCenterMesh) return;
 
-      // Get camera distance to portal for visual effect
       const camPos = new THREE.Vector3();
       camera.getWorldPosition(camPos);
-      
+
       const portalPos = new THREE.Vector3();
       portalCenterMesh.getWorldPosition(portalPos);
-      
+
       const distance = camPos.distanceTo(portalPos);
       const maxDistance = 2.0;
-      
-      // Make portal pulse based on distance
+
       const intensity = Math.max(0, (maxDistance - distance) / maxDistance);
       portalCenterMesh.material.emissiveIntensity = intensity * 2;
-      
-      // Make portal slightly animate
-      portalCenterMesh.scale.y = 1 + Math.sin(Date.now() * 0.001) * 0.05 * intensity;
-      portalCenterMesh.scale.x = 1 + Math.cos(Date.now() * 0.0012) * 0.05 * intensity;
     }
   </script>
 </body>
