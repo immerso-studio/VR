@@ -60,13 +60,6 @@
       sceneB = new THREE.Scene();
       sceneB.background = new THREE.Color(0x003366);
       addLights(sceneB);
-
-      const altRoom = new THREE.Mesh(
-        new THREE.BoxGeometry(10, 2.5, 10),
-        new THREE.MeshStandardMaterial({ color: 0x225577, side: THREE.BackSide })
-      );
-      sceneB.add(altRoom);
-
       loadAltRoom(sceneB); // Load GLB in Scene B
 
       activeScene = sceneA;
@@ -128,10 +121,11 @@
     function checkPortalEntry() {
       if (switched) return;
 
+      const xrCamera = renderer.xr.getCamera(camera); // XR-aware camera
       const camPos = new THREE.Vector3();
-      camera.getWorldPosition(camPos);
+      xrCamera.getWorldPosition(camPos);
 
-      const portalPos = portalCenterMesh.position.clone();
+      const portalPos = portalCenterMesh.getWorldPosition(new THREE.Vector3());
       const distance = camPos.distanceTo(portalPos);
 
       if (distance < 0.5) {
