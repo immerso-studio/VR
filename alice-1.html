@@ -60,11 +60,14 @@
       sceneB = new THREE.Scene();
       sceneB.background = new THREE.Color(0x003366);
       addLights(sceneB);
+
       const altRoom = new THREE.Mesh(
         new THREE.BoxGeometry(10, 2.5, 10),
         new THREE.MeshStandardMaterial({ color: 0x225577, side: THREE.BackSide })
       );
       sceneB.add(altRoom);
+
+      loadAltRoom(sceneB); // Load GLB in Scene B
 
       activeScene = sceneA;
 
@@ -91,7 +94,21 @@
         gltf.scene.scale.set(2, 2, 2);
         scene.add(gltf.scene);
       }, undefined, function (error) {
-        console.error('Errore nel caricamento GLB:', error);
+        console.error('Errore nel caricamento GLB (Scene A):', error);
+      });
+    }
+
+    function loadAltRoom(scene) {
+      const loader = new GLTFLoader();
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      loader.setDRACOLoader(dracoLoader);
+
+      loader.load('assets/Stanza-prova-2.glb', function (gltf) {
+        gltf.scene.scale.set(2, 2, 2);
+        scene.add(gltf.scene);
+      }, undefined, function (error) {
+        console.error('Errore nel caricamento GLB (Scene B):', error);
       });
     }
 
