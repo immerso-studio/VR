@@ -1,32 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>VR Portal Room</title>
+  <meta charset="UTF-8" />
+  <title>Three.js VR Portal Example</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-    }
-  }
-  </script>
 </head>
 <body>
   <script type="module">
-    import * as THREE from 'three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-    import { VRButton } from 'three/addons/webxr/VRButton.js';
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js';
+    import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/webxr/VRButton.js';
 
-    let camera, renderer;
-    let sceneA, sceneB, activeScene;
-    let portalCenterMesh;
-    let switched = false;
+    let camera, sceneA, sceneB, renderer;
+    let portalMesh;
+    let inSceneB = false;
 
     init();
     animate();
@@ -40,54 +29,45 @@
       document.body.appendChild(VRButton.createButton(renderer));
 
       // Camera
-      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(0, 1.6, 3);
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 1.6, 5);
 
       // Scene A
       sceneA = new THREE.Scene();
-      sceneA.background = new THREE.Color(0x222222);
-      addLights(sceneA);
-      loadRoom(sceneA, 'assets/Stanza-prova-1.glb');
+      sceneA.background = new THREE.Color('blue');
 
-      // Portale visivo
-      const cubeGeo = new THREE.BoxGeometry(1, 2, 0.1);
-      const cubeMat = new THREE.MeshStandardMaterial({ color: 0xff00ff });
-      portalCenterMesh = new THREE.Mesh(cubeGeo, cubeMat);
-      portalCenterMesh.position.set(0, 1.6, -1.5);
-      sceneA.add(portalCenterMesh);
+      // Add 3 red cubes to Scene A
+      const cubeGeometry = new THREE.BoxGeometry();
+      const cubeMaterial = new THREE.MeshBasicMaterial({ color: 'red' });
+      for (let i = 0; i < 3; i++) {
+        const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        cube.position.set(i * 2 - 2, 1, -5);
+        sceneA.add(cube);
+      }
 
-      // Scene B (vuota fino al caricamento)
+      // Portal (purple)
+      const portalGeometry = new THREE.RingGeometry(0.9, 1, 32);
+      const portalMaterial = new THREE.MeshBasicMaterial({ color: 'purple', side: THREE.DoubleSide });
+      portalMesh = new THREE.Mesh(portalGeometry, portalMaterial);
+      portalMesh.position.set(0, 1.6, -5);
+      portalMesh.rotation.y = Math.PI;
+      sceneA.add(portalMesh);
+
+      // Scene B
       sceneB = new THREE.Scene();
-      sceneB.background = new THREE.Color(0x000000);
-      addLights(sceneB);
+      sceneB.background = new THREE.Color('yellow');
 
-      activeScene = sceneA;
+      // Add 3 green spheres to Scene B
+      const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+      const sphereMaterial = new THREE.MeshBasicMaterial({ color: 'green' });
+      for (let i = 0; i < 3; i++) {
+        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.position.set(i * 2 - 2, 1, -5);
+        sceneB.add(sphere);
+      }
 
-      window.addEventListener('resize', onWindowResize);
-    }
-
-    function addLights(scene) {
-      const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
-      hemi.position.set(0, 1, 0);
-      scene.add(hemi);
-
-      const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-      dir.position.set(3, 10, 10);
-      scene.add(dir);
-    }
-
-    function loadRoom(scene, path) {
-      const loader = new GLTFLoader();
-      const dracoLoader = new DRACOLoader();
-      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-      loader.setDRACOLoader(dracoLoader);
-
-      loader.load(path, function (gltf) {
-        gltf.scene.scale.set(2, 2, 2);
-        scene.add(gltf.scene);
-      }, undefined, function (error) {
-        console.error('Errore nel caricamento GLB:', error);
-      });
+      // Handle window resize
+      window.addEventListener('resize', onWindowResize, false);
     }
 
     function onWindowResize() {
@@ -97,38 +77,22 @@
     }
 
     function animate() {
-      renderer.setAnimationLoop(() => {
-        checkPortalEntry();
-        renderer.render(activeScene, camera);
-      });
+      renderer.setAnimationLoop(render);
     }
 
-    function checkPortalEntry() {
-      if (switched) return;
+    function render() {
+      // Simple proximity check to switch scenes
+      const distance = camera.position.distanceTo(portalMesh.position);
+      if (distance < 1 && !inSceneB) {
+        inSceneB = true;
+      } else if (distance >= 1 && inSceneB) {
+        inSceneB = false;
+      }
 
-      const camPos = new THREE.Vector3();
-      camera.getWorldPosition(camPos);
-
-      const portalPos = portalCenterMesh.position.clone();
-      const distance = camPos.distanceTo(portalPos);
-
-      if (distance < 0.5) {
-        console.log("✅ PORTALE ATTRAVERSATO");
-        switched = true;
-
-        const loader = new GLTFLoader();
-        const dracoLoader = new DRACOLoader();
-        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-        loader.setDRACOLoader(dracoLoader);
-
-        loader.load('assets/Stanza-prova-2.glb', function (gltf) {
-          gltf.scene.scale.set(1, 1, 1);
-          gltf.scene.position.set(0, 0, 0); // <--- change position here
-          sceneB.add(gltf.scene);
-          activeScene = sceneB;
-        }, undefined, function (error) {
-          console.error('Errore nel caricamento di Stanza-prova-2.glb:', error);
-        });
+      if (inSceneB) {
+        renderer.render(sceneB, camera);
+      } else {
+        renderer.render(sceneA, camera);
       }
     }
   </script>
