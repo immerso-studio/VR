@@ -60,7 +60,7 @@
       loadRoom(sceneA);
 
       // Portal (plane)
-      const cubeGeo = new THREE.BoxGeometry(1, 2, 0);
+      const cubeGeo = new THREE.BoxGeometry(1.5, 3.5, 0);
       const cubeMat = new THREE.MeshStandardMaterial({ 
         color: 0x000000,
         emissive: 0x000000,
@@ -68,10 +68,10 @@
         roughness: 0.1
       });
       portalCenterMesh = new THREE.Mesh(cubeGeo, cubeMat);
-      portalCenterMesh.position.set(0, 1, -1.9);
+      portalCenterMesh.position.set(0, 1.7, -2.8);
       sceneA.add(portalCenterMesh);
 
-      
+
       // Door model around portal
       loadDoorModel(sceneA);
 
@@ -129,7 +129,7 @@
       dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
       loader.setDRACOLoader(dracoLoader);
 
-      loader.load('assets/Stanza-prova-2.glb', function (gltf) {
+      loader.load('assets/Stanza-prova-3.glb', function (gltf) {
         gltf.scene.scale.set(2, 2, 2);
         scene.add(gltf.scene);
       }, undefined, function (error) {
@@ -146,7 +146,7 @@
       loader.load('assets/Porta.glb', function (gltf) {
         const door = gltf.scene;
         door.position.set(0, 0, 0); // Match portal position
-        door.scale.set(1, 1, 1); // Adjust if needed
+        door.scale.set(1.5, 1.5, 1.5); // Adjust if needed
         scene.add(door);
       }, undefined, function (error) {
         console.error('Error loading door model:', error);
