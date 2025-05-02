@@ -30,7 +30,7 @@
 
       // Camera
       camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-      camera.position.set(0, 1.6, -3);
+      camera.position.set(0, 1.6, 0);
 
       // Scene A
       sceneA = new THREE.Scene();
@@ -41,7 +41,7 @@
       const cubeMaterial = new THREE.MeshBasicMaterial({ color: 'red' });
       for (let i = 0; i < 3; i++) {
         const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-        cube.position.set(i * 2 - 2, 1, -5);
+        cube.position.set(i * 2 - 2, 1, -1);
         sceneA.add(cube);
       }
 
@@ -49,7 +49,7 @@
       const portalGeometry = new THREE.RingGeometry(0.9, 1, 32);
       const portalMaterial = new THREE.MeshBasicMaterial({ color: 'purple', side: THREE.DoubleSide });
       portalMesh = new THREE.Mesh(portalGeometry, portalMaterial);
-      portalMesh.position.set(0, 1.6, -5);
+      portalMesh.position.set(0, 1.6, -1);
       portalMesh.rotation.y = Math.PI;
       sceneA.add(portalMesh);
 
@@ -62,7 +62,7 @@
       const sphereMaterial = new THREE.MeshBasicMaterial({ color: 'green' });
       for (let i = 0; i < 3; i++) {
         const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        sphere.position.set(i * 2 - 2, 1, -5);
+        sphere.position.set(i * 2 - 2, 1, -1);
         sceneB.add(sphere);
       }
 
