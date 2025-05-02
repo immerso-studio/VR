@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>VR Portal Room</title>
+  <title>VR Portal Room with Video Texture</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -37,7 +37,6 @@
     let sceneA, sceneB, activeScene;
     let portalCenterMesh;
     let switched = false;
-    let roomAObject = null; // 🔸 Per riferimento alla scena A
 
     init();
     animate();
@@ -60,17 +59,47 @@
       addLights(sceneA);
       loadRoom(sceneA);
 
-      // Portal (plane)
-      const cubeGeo = new THREE.BoxGeometry(1.5, 3.5, 0);
-      const cubeMat = new THREE.MeshStandardMaterial({ 
-        color: 0x000000,
-        emissive: 0x000000,
+      // Portal (video-textured cube)
+      const cubeGeo = new THREE.BoxGeometry(1.5, 3.5, 0.1);
+
+      const video = document.createElement('video');
+      video.src = 'assets/video/portale.mp4';
+      video.crossOrigin = 'anonymous';
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.play();
+
+      const videoTexture = new THREE.VideoTexture(video);
+      videoTexture.minFilter = THREE.LinearFilter;
+      videoTexture.magFilter = THREE.LinearFilter;
+      videoTexture.format = THREE.RGBAFormat;
+      videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+      const cubeMat = new THREE.MeshStandardMaterial({
+        map: videoTexture,
+        side: THREE.DoubleSide,
         metalness: 0.5,
         roughness: 0.1
       });
+
       portalCenterMesh = new THREE.Mesh(cubeGeo, cubeMat);
       portalCenterMesh.position.set(0, 1.7, -2.8);
       sceneA.add(portalCenterMesh);
+
+      // Logo Plane in front of portal
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load('assets/video/LOGO.png', (logoTexture) => {
+        const logoMaterial = new THREE.MeshBasicMaterial({
+          map: logoTexture,
+          transparent: true
+        });
+        const logoGeometry = new THREE.PlaneGeometry(2, 2);
+        const logoMesh = new THREE.Mesh(logoGeometry, logoMaterial);
+        logoMesh.position.set(0, 1.6, -1); // Slightly in front and above the portal
+        logoMesh.renderOrder = 1;
+        sceneA.add(logoMesh);
+      });
 
       // Door model around portal
       loadDoorModel(sceneA);
@@ -92,20 +121,8 @@
           console.log("Scene reset");
         }
       });
-      
 
       window.addEventListener('resize', onWindowResize);
-
-      // 🔸 Attiva animazione dopo 10 sec in VR
-      renderer.xr.addEventListener('sessionstart', () => {
-        console.log("🎮 VR session started");
-
-        setTimeout(() => {
-          if (roomAObject) {
-            animateRoomScale(roomAObject, new THREE.Vector3(10, 10, 10), 3); // 2 sec animazione
-          }
-        }, 10000); // ⏳ 10 sec delay
-      });
     }
 
     function addLights(scene) {
@@ -129,7 +146,6 @@
 
       loader.load('assets/Stanza-prova-1.glb', function (gltf) {
         gltf.scene.scale.set(2, 2, 2);
-        roomAObject = gltf.scene; // 🔸 salva il riferimento
         scene.add(gltf.scene);
       }, undefined, function (error) {
         console.error('Error loading GLB (Scene A):', error);
@@ -158,8 +174,8 @@
 
       loader.load('assets/Porta.glb', function (gltf) {
         const door = gltf.scene;
-        door.position.set(0, 0, 0); // Match portal position
-        door.scale.set(1.5, 1.5, 1.5); // Adjust if needed
+        door.position.set(0, 0, 0);
+        door.scale.set(1.5, 1.5, 1.5);
         scene.add(door);
       }, undefined, function (error) {
         console.error('Error loading door model:', error);
@@ -214,21 +230,6 @@
 
       const intensity = Math.max(0, (maxDistance - distance) / maxDistance);
       portalCenterMesh.material.emissiveIntensity = intensity * 2;
-    }
-
-    // 🔸 Animazione scala con interpolazione
-    function animateRoomScale(object, targetScale, duration) {
-      const initialScale = object.scale.clone();
-      const startTime = performance.now();
-
-      function update() {
-        const elapsed = (performance.now() - startTime) / 1000;
-        const t = Math.min(elapsed / duration, 1);
-        object.scale.lerpVectors(initialScale, targetScale, t);
-        if (t < 1) requestAnimationFrame(update);
-      }
-
-      update();
     }
   </script>
 </body>
