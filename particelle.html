@@ -57,7 +57,7 @@
 
       const loader = new GLTFLoader();
       loader.setDRACOLoader(dracoLoader);
-      loader.load('assets/Stanza-prova-4.glb', (gltf) => {
+      loader.load('assets/Stanza-scansionata-1.glb', (gltf) => {
         const model = gltf.scene;
 
         const box = new THREE.Box3().setFromObject(model);
@@ -163,7 +163,7 @@
       }
 
       const material = new THREE.PointsMaterial({
-        size: 0.05,
+        size: 0.02,
         vertexColors: true,
         map: createCircleTexture(),
         alphaTest: 0.5,
@@ -205,8 +205,8 @@
           const dz = intersectPoint.z - positions[i + 2];
           const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-          if (dist < 2) {
-            const force = (1 - dist / 2) * 0.01;
+          if (dist < 1.2) {
+            const force = (1 - dist / 1.2) * 0.004;
             positions[i] += dx * force;
             positions[i + 1] += dy * force;
             positions[i + 2] += dz * force;
