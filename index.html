@@ -138,7 +138,7 @@
       sceneA.add(portalCenterMesh);
 
       // Logo plane with fade-in
-      textureLoader.load('assets/video/LOGO-.png', (logoTexture) => {
+      textureLoader.load('assets/video/LOGO-2.png', (logoTexture) => {
         const logoMaterial = new THREE.MeshBasicMaterial({
           map: logoTexture,
           transparent: true,
@@ -198,8 +198,9 @@
       dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
       loader.setDRACOLoader(dracoLoader);
 
-      loader.load('assets/Stanza-prova-.glb', function (gltf) {
-        gltf.scene.scale.set(2, 2, 2);
+      loader.load('assets/Stanza-scansionata-1.glb', function (gltf) {
+        gltf.scene.scale.set(3, 3, 3);
+        
         gltf.scene.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
