@@ -2,11 +2,12 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Punti Interattivi UI + Giroscopio</title>
+  <title>Punti Interattivi UI</title>
   <style>
     body { margin: 0; overflow: hidden; font-family: sans-serif; }
     canvas { display: block; }
 
+    /* Scheda informativa */
     #infoCard {
       position: fixed;
       top: 0; left: 0;
@@ -63,14 +64,12 @@
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-    import { DeviceOrientationControls } from 'three/addons/controls/DeviceOrientationControls.js';
 
     let scene, camera, renderer;
     let yawObject, pitchObject;
     let raycaster = new THREE.Raycaster();
     let mouse = new THREE.Vector2();
     let clickableObjects = [];
-    let deviceControls = null;
 
     let isMouseDown = false;
     let prevMouseX = 0;
@@ -118,23 +117,6 @@
       addInteractivePoint(new THREE.Vector3(-1.7, 0.9, -1), '#00ff00', 'VERDE');
       addInteractivePoint(new THREE.Vector3(-1.7, 1.2, 1), '#0000ff', 'BLU');
 
-      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        deviceControls = new DeviceOrientationControls(camera);
-
-        window.addEventListener('click', () => {
-          if (typeof DeviceOrientationEvent !== 'undefined' &&
-              typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission().then(permissionState => {
-              if (permissionState === 'granted') {
-                deviceControls.connect();
-              }
-            }).catch(console.error);
-          } else {
-            deviceControls.connect(); // Android
-          }
-        }, { once: true });
-      }
-
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -152,7 +134,7 @@
       });
 
       window.addEventListener('mousemove', (e) => {
-        if (!isMouseDown || deviceControls) return;
+        if (!isMouseDown) return;
         const deltaX = e.clientX - prevMouseX;
         const deltaY = e.clientY - prevMouseY;
 
@@ -241,7 +223,6 @@
 
     function animate() {
       requestAnimationFrame(animate);
-      if (deviceControls) deviceControls.update();
       renderer.render(scene, camera);
     }
   </script>
