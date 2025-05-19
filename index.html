@@ -71,12 +71,13 @@
     let clickableObjects = [];
 
     let isMouseDown = false;
+    let isTouching = false;
     let prevMouseX = 0;
     let prevMouseY = 0;
-
-    let isTouching = false;
     let prevTouchX = 0;
     let prevTouchY = 0;
+    let mouseMoved = false;
+    const clickThreshold = 5;
 
     init();
     animate();
@@ -125,21 +126,22 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
 
-      // Mouse
+      // Mouse events
       window.addEventListener('mousedown', (e) => {
         isMouseDown = true;
+        mouseMoved = false;
         prevMouseX = e.clientX;
         prevMouseY = e.clientY;
-      });
-
-      window.addEventListener('mouseup', () => {
-        isMouseDown = false;
       });
 
       window.addEventListener('mousemove', (e) => {
         if (!isMouseDown) return;
         const deltaX = e.clientX - prevMouseX;
         const deltaY = e.clientY - prevMouseY;
+
+        if (Math.abs(deltaX) > clickThreshold || Math.abs(deltaY) > clickThreshold) {
+          mouseMoved = true;
+        }
 
         yawObject.rotation.y -= deltaX * 0.002;
         pitchObject.rotation.x -= deltaY * 0.002;
@@ -149,10 +151,18 @@
         prevMouseY = e.clientY;
       });
 
-      // Touch
+      window.addEventListener('mouseup', (e) => {
+        isMouseDown = false;
+        if (!mouseMoved) {
+          handlePointerSelect(e.clientX, e.clientY);
+        }
+      });
+
+      // Touch events
       window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
           isTouching = true;
+          mouseMoved = false;
           prevTouchX = e.touches[0].clientX;
           prevTouchY = e.touches[0].clientY;
         }
@@ -166,6 +176,10 @@
         const deltaX = touchX - prevTouchX;
         const deltaY = touchY - prevTouchY;
 
+        if (Math.abs(deltaX) > clickThreshold || Math.abs(deltaY) > clickThreshold) {
+          mouseMoved = true;
+        }
+
         yawObject.rotation.y -= deltaX * 0.002;
         pitchObject.rotation.x -= deltaY * 0.002;
         pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchObject.rotation.x));
@@ -176,26 +190,11 @@
 
       window.addEventListener('touchend', (e) => {
         isTouching = false;
-
-        if (e.changedTouches.length === 1) {
+        if (!mouseMoved && e.changedTouches.length === 1) {
           const touch = e.changedTouches[0];
-          const x = touch.clientX;
-          const y = touch.clientY;
-
-          mouse.x = (x / window.innerWidth) * 2 - 1;
-          mouse.y = -(y / window.innerHeight) * 2 + 1;
-
-          raycaster.setFromCamera(mouse, camera);
-          const intersects = raycaster.intersectObjects(clickableObjects);
-
-          if (intersects.length > 0) {
-            const clickedName = intersects[0].object.name;
-            showInfoCard(clickedName);
-          }
+          handlePointerSelect(touch.clientX, touch.clientY);
         }
       }, { passive: true });
-
-      window.addEventListener('click', onClick);
     }
 
     function createLabelSprite(text, color = '#00FFAA') {
@@ -226,9 +225,9 @@
       clickableObjects.push(sprite);
     }
 
-    function onClick(event) {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    function handlePointerSelect(x, y) {
+      mouse.x = (x / window.innerWidth) * 2 - 1;
+      mouse.y = -(y / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(clickableObjects);
@@ -247,15 +246,15 @@
       const data = {
         'ROSSO': {
           title: 'Gli Affreschi: La Mano di Teodoro Ghisi',
-          text: 'Il pregio maggiore dell\'Oratorio risiede negli affreschi che ne decorano la volta absidale...'
+          text: 'Il pregio maggiore dell\'Oratorio risiede negli affreschi che ne decorano la volta absidale. Le fonti attribuiscono queste pitture a Teodoro Ghisi (circa 1536-1601), un importante artista mantovano formatosi alla scuola di Giulio Romano e attivo presso la corte dei Gonzaga. Questa attribuzione colloca gli affreschi nel pieno manierismo tardo cinquecentesco.'
         },
         'VERDE': {
           title: 'Un Balconcino e Drastiche Trasformazioni',
-          text: 'Originariamente, un dettaglio architettonico significativo era un balconcino...'
+          text: 'Originariamente, un dettaglio architettonico significativo era un balconcino che, da una stanza adiacente (probabilmente una camera padronale), permetteva ai Signori di assistere alle funzioni religiose in modo riservato. Tuttavia, la storia dell\'Oratorio è segnata da un cambiamento radicale: in epoca successiva, probabilmente all\'inizio del XX secolo, una parte consistente dell\'antica cappella fu trasformata in un locale bagno, adiacente alla "Camera del Re" approntata per Vittorio Emanuele III nel 1909.'
         },
         'BLU': {
           title: 'Iconografia degli Affreschi: Un Mistero da Svelare',
-          text: 'Nonostante l\'attribuzione a Ghisi, i soggetti precisi degli affreschi rimangono in parte oscuri...'
+          text: 'Nonostante l\'attribuzione a Ghisi, i soggetti precisi degli affreschi rimangono in parte oscuri. La denominazione "Oratorio della Natività di Maria" suggerisce che il ciclo potesse illustrare episodi della vita della Vergine. Si ipotizzano scene come la "Trinità che incorona Maria" o l\'"Annunciazione", ma mancano conferme visive o descrizioni dettagliate che ne attestino con certezza l\'iconografia. Lo stile sarebbe tipicamente manierista, con figure dinamiche e complesse, forse influenzato dalle esigenze devozionali della Controriforma.'
         }
       };
 

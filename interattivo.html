@@ -2,12 +2,12 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Punti Interattivi UI</title>
   <style>
     body { margin: 0; overflow: hidden; font-family: sans-serif; }
     canvas { display: block; }
 
-    /* Scheda informativa */
     #infoCard {
       position: fixed;
       top: 0; left: 0;
@@ -51,7 +51,6 @@
   </script>
 </head>
 <body>
-  <!-- Scheda informativa -->
   <div id="infoCard">
     <div id="infoCardContent">
       <span id="closeBtn">&times;</span>
@@ -74,6 +73,10 @@
     let isMouseDown = false;
     let prevMouseX = 0;
     let prevMouseY = 0;
+
+    let isTouching = false;
+    let prevTouchX = 0;
+    let prevTouchY = 0;
 
     init();
     animate();
@@ -112,7 +115,6 @@
         scene.add(model);
       });
 
-      // Punti interattivi
       addInteractivePoint(new THREE.Vector3(1.7, 1.7, 0), '#ff0000', 'ROSSO');
       addInteractivePoint(new THREE.Vector3(-1.7, 0.9, -1), '#00ff00', 'VERDE');
       addInteractivePoint(new THREE.Vector3(-1.7, 1.2, 1), '#0000ff', 'BLU');
@@ -123,6 +125,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
 
+      // Mouse
       window.addEventListener('mousedown', (e) => {
         isMouseDown = true;
         prevMouseX = e.clientX;
@@ -145,6 +148,52 @@
         prevMouseX = e.clientX;
         prevMouseY = e.clientY;
       });
+
+      // Touch
+      window.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          isTouching = true;
+          prevTouchX = e.touches[0].clientX;
+          prevTouchY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      window.addEventListener('touchmove', (e) => {
+        if (!isTouching || e.touches.length !== 1) return;
+
+        const touchX = e.touches[0].clientX;
+        const touchY = e.touches[0].clientY;
+        const deltaX = touchX - prevTouchX;
+        const deltaY = touchY - prevTouchY;
+
+        yawObject.rotation.y -= deltaX * 0.002;
+        pitchObject.rotation.x -= deltaY * 0.002;
+        pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchObject.rotation.x));
+
+        prevTouchX = touchX;
+        prevTouchY = touchY;
+      }, { passive: true });
+
+      window.addEventListener('touchend', (e) => {
+        isTouching = false;
+
+        if (e.changedTouches.length === 1) {
+          const touch = e.changedTouches[0];
+          const x = touch.clientX;
+          const y = touch.clientY;
+
+          mouse.x = (x / window.innerWidth) * 2 - 1;
+          mouse.y = -(y / window.innerHeight) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(clickableObjects);
+
+          if (intersects.length > 0) {
+            const clickedName = intersects[0].object.name;
+            showInfoCard(clickedName);
+          }
+        }
+      }, { passive: true });
 
       window.addEventListener('click', onClick);
     }
@@ -198,15 +247,15 @@
       const data = {
         'ROSSO': {
           title: 'Gli Affreschi: La Mano di Teodoro Ghisi',
-          text: 'Il pregio maggiore dell\'Oratorio risiede negli affreschi che ne decorano la volta absidale. Le fonti attribuiscono queste pitture a Teodoro Ghisi (circa 1536-1601), un importante artista mantovano formatosi alla scuola di Giulio Romano e attivo presso la corte dei Gonzaga. Questa attribuzione colloca gli affreschi nel pieno manierismo tardo cinquecentesco.'
+          text: 'Il pregio maggiore dell\'Oratorio risiede negli affreschi che ne decorano la volta absidale...'
         },
         'VERDE': {
           title: 'Un Balconcino e Drastiche Trasformazioni',
-          text: 'Originariamente, un dettaglio architettonico significativo era un balconcino che, da una stanza adiacente (probabilmente una camera padronale), permetteva ai Signori di assistere alle funzioni religiose in modo riservato. Tuttavia, la storia dell\'Oratorio è segnata da un cambiamento radicale: in epoca successiva, probabilmente all\'inizio del XX secolo, una parte consistente dell\'antica cappella fu trasformata in un locale bagno, adiacente alla "Camera del Re" approntata per Vittorio Emanuele III nel 1909.'
+          text: 'Originariamente, un dettaglio architettonico significativo era un balconcino...'
         },
         'BLU': {
           title: 'Iconografia degli Affreschi: Un Mistero da Svelare',
-          text: 'Nonostante l\'attribuzione a Ghisi, i soggetti precisi degli affreschi rimangono in parte oscuri. La denominazione "Oratorio della Natività di Maria" suggerisce che il ciclo potesse illustrare episodi della vita della Vergine. Si ipotizzano scene come la "Trinità che incorona Maria" o l\'"Annunciazione", ma mancano conferme visive o descrizioni dettagliate che ne attestino con certezza l\'iconografia. Lo stile sarebbe tipicamente manierista, con figure dinamiche e complesse, forse influenzato dalle esigenze devozionali della Controriforma.'
+          text: 'Nonostante l\'attribuzione a Ghisi, i soggetti precisi degli affreschi rimangono in parte oscuri...'
         }
       };
 
