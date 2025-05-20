@@ -72,6 +72,51 @@
       justify-content: center;
     }
 
+    #audioPlayer {
+      display: none;
+      position: relative;
+      margin-top: 20px;
+      padding: 10px 15px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    #audioPlayer button {
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(5px);
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    #audioPlayer input[type="range"] {
+      flex-grow: 1;
+      height: 6px;
+      border-radius: 5px;
+      background: #ddd;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    #audioPlayer input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #333;
+      cursor: pointer;
+    }
+
+
+
 
 
   </style>
@@ -90,8 +135,15 @@
       <span id="closeBtn">&times;</span>
       <h2 id="infoTitle"></h2>
       <img id="infoImage" src="" alt="info" style="max-width: 100%; margin-bottom: 15px; border-radius: 8px;" />
+      <div id="audioPlayer">
+        <button id="playPauseBtn">⏵︎</button>
+        <input type="range" id="progressBar" value="0" min="0" step="1" />
+        <audio id="audio" src=""></audio>
+      </div>
 
       <p id="infoText"></p>
+
+
     </div>
   </div>
 
@@ -279,22 +331,27 @@
       const title = document.getElementById('infoTitle');
       const text = document.getElementById('infoText');
       const image = document.getElementById('infoImage');
+      const audio = document.getElementById('audio');
+      const audioPlayer = document.getElementById('audioPlayer');
 
       const data = {
         'ROSSO': {
           title: 'Gli Affreschi: La Mano di Teodoro Ghisi',
           text: 'Il pregio maggiore dell\'Oratorio risiede negli affreschi che ne decorano la volta absidale. Le fonti attribuiscono queste pitture a Teodoro Ghisi (circa 1536-1601), un importante artista mantovano formatosi alla scuola di Giulio Romano e attivo presso la corte dei Gonzaga. Questa attribuzione colloca gli affreschi nel pieno manierismo tardo cinquecentesco.',
-          image: 'assets/schede/1.jpg'
+          image: 'assets/schede/1.jpg',
+          audio: 'assets/schede/Fairy_Vibes.mp3'
         },
         'VERDE': {
           title: 'Un Balconcino e Drastiche Trasformazioni',
           text: 'Originariamente, un dettaglio architettonico significativo era un balconcino che, da una stanza adiacente (probabilmente una camera padronale), permetteva ai Signori di assistere alle funzioni religiose in modo riservato. Tuttavia, la storia dell\'Oratorio è segnata da un cambiamento radicale: in epoca successiva, probabilmente all\'inizio del XX secolo, una parte consistente dell\'antica cappella fu trasformata in un locale bagno, adiacente alla "Camera del Re" approntata per Vittorio Emanuele III nel 1909.',
-          image: 'assets/schede/2.png'
+          image: 'assets/schede/2.png',
+          audio: 'assets/schede/Fairy_Vibes.mp3'
         },
         'BLU': {
           title: 'Iconografia degli Affreschi: Un Mistero da Svelare',
           text: 'Nonostante l\'attribuzione a Ghisi, i soggetti precisi degli affreschi rimangono in parte oscuri. La denominazione "Oratorio della Natività di Maria" suggerisce che il ciclo potesse illustrare episodi della vita della Vergine. Si ipotizzano scene come la "Trinità che incorona Maria" o l\'"Annunciazione", ma mancano conferme visive o descrizioni dettagliate che ne attestino con certezza l\'iconografia. Lo stile sarebbe tipicamente manierista, con figure dinamiche e complesse, forse influenzato dalle esigenze devozionali della Controriforma.',
-          image: 'assets/schede/3.jpg'
+          image: 'assets/schede/3.jpg',
+          audio: 'assets/schede/Fairy_Vibes.mp3'
         }
       };
 
@@ -302,13 +359,54 @@
         title.innerText = data[name].title;
         text.innerText = data[name].text;
         image.src = data[name].image;
+        audio.src = data[name].audio;
+        audioPlayer.style.display = 'flex';
         infoCard.classList.add('show');
       }
     }
 
     document.getElementById('closeBtn').addEventListener('click', () => {
+      const audio = document.getElementById('audio');
+      const playPauseBtn = document.getElementById('playPauseBtn');
+      const audioPlayer = document.getElementById('audioPlayer');
+
+      audio.pause();
+      audio.currentTime = 0;
+      playPauseBtn.textContent = '⏵︎';
+      audioPlayer.style.display = 'none';
+
       document.getElementById('infoCard').classList.remove('show');
     });
+
+
+    const audio = document.getElementById('audio');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const progressBar = document.getElementById('progressBar');
+
+    playPauseBtn.addEventListener('click', () => {
+      if (audio.paused) {
+        audio.play();
+        playPauseBtn.textContent = '⏸︎';
+      } else {
+        audio.pause();
+        playPauseBtn.textContent = '⏵︎';
+      }
+    });
+
+    // Aggiorna la barra mentre l'audio avanza
+    audio.addEventListener('timeupdate', () => {
+      if (!isNaN(audio.duration)) {
+        progressBar.max = Math.floor(audio.duration);
+        progressBar.value = Math.floor(audio.currentTime);
+      }
+    });
+
+    // Quando l'utente muove la barra, cambia il tempo dell'audio
+    progressBar.addEventListener('input', () => {
+      audio.currentTime = progressBar.value;
+    });
+
+
 
 
     function animate() {
