@@ -451,11 +451,11 @@
     function handleOrientation(event) {
       if (event.alpha === null || event.beta === null || event.gamma === null) return;
 
-      const alpha = THREE.MathUtils.degToRad(event.alpha); // compass
-      const beta = THREE.MathUtils.degToRad(event.beta);   // front-back
-      const gamma = THREE.MathUtils.degToRad(event.gamma); // left-right
+      const alpha = THREE.MathUtils.degToRad(event.alpha); // rotazione orizzontale (compass)
+      const beta = THREE.MathUtils.degToRad(event.beta);   // inclinazione front-back
+      // const gamma = THREE.MathUtils.degToRad(event.gamma); // inclinazione laterale (che ignoriamo)
 
-      camera.rotation.set(beta - Math.PI / 2, alpha, -gamma);
+      camera.rotation.set(beta - Math.PI / 2, alpha, 0); // impostiamo gamma = 0
     }
 
     setupDeviceOrientation();
