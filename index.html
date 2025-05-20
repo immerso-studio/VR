@@ -434,17 +434,24 @@
       }
     }
 
+    const euler = new THREE.Euler();
+    const quaternion = new THREE.Quaternion();
+
     function handleOrientation(event) {
       if (event.alpha === null || event.beta === null || event.gamma === null) return;
 
-      const alpha = THREE.MathUtils.degToRad(event.alpha); // compass
-      const beta = THREE.MathUtils.degToRad(event.beta);   // front-back
-      const gamma = THREE.MathUtils.degToRad(event.gamma); // left-right
+      // Converti in radianti
+      const alpha = THREE.MathUtils.degToRad(event.alpha); // Yaw
+      const beta = THREE.MathUtils.degToRad(event.beta);   // Pitch
+      // Ignora gamma per evitare l'inclinazione laterale
 
-      camera.rotation.set(beta * 0.2, alpha, 0);
+      // Imposta euler (nota: ordine ZYX)
+      euler.set(beta, alpha, 0, 'YXZ'); // 0 in terza posizione = niente roll
 
-
+      quaternion.setFromEuler(euler);
+      camera.quaternion.copy(quaternion);
     }
+
 
     setupDeviceOrientation();
 
