@@ -406,50 +406,37 @@
       audio.currentTime = progressBar.value;
     });
 
+    let controls;
+
     function setupDeviceOrientation() {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS
+        // iOS richiede permesso
         const button = document.createElement('button');
         button.innerText = 'Attiva Giroscopio';
         button.style.position = 'absolute';
         button.style.top = '20px';
         button.style.left = '20px';
         button.style.zIndex = '2000';
-        button.style.padding = '10px 20px';
-        button.style.fontSize = '16px';
         document.body.appendChild(button);
 
         button.addEventListener('click', async () => {
           const response = await DeviceOrientationEvent.requestPermission();
           if (response === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation);
+            controls = new DeviceOrientationControls(camera);
+            controls.connect();
+            controls.update();
             button.remove();
           } else {
             alert('Permesso negato.');
           }
         });
       } else {
-        // Android & altri
-        window.addEventListener('deviceorientation', handleOrientation);
+        // Android o desktop
+        controls = new DeviceOrientationControls(camera);
+        controls.connect();
       }
     }
 
-    function handleOrientation(event) {
-      if (event.alpha === null || event.beta === null) return;
-
-      const alpha = THREE.MathUtils.degToRad(event.alpha); // rotazione orizzontale (compasso)
-      const beta = THREE.MathUtils.degToRad(event.beta);   // inclinazione verticale
-
-      // Limita il beta (pitch) per evitare la rotazione selvaggia
-      const maxPitch = THREE.MathUtils.degToRad(85); // ~85 gradi massimo su/giù
-      const limitedPitch = Math.max(-maxPitch, Math.min(maxPitch, beta - Math.PI / 2));
-
-      yawObject.rotation.y = alpha;
-      pitchObject.rotation.x = limitedPitch;
-    }
-
-
-    setupDeviceOrientation();
 
 
 
@@ -459,6 +446,8 @@
     function animate() {
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
+      if (controls) controls.update();
+
     }
   </script>
 </body>
