@@ -406,37 +406,45 @@
       audio.currentTime = progressBar.value;
     });
 
-    let controls;
-
     function setupDeviceOrientation() {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS richiede permesso
+        // iOS
         const button = document.createElement('button');
         button.innerText = 'Attiva Giroscopio';
         button.style.position = 'absolute';
         button.style.top = '20px';
         button.style.left = '20px';
         button.style.zIndex = '2000';
+        button.style.padding = '10px 20px';
+        button.style.fontSize = '16px';
         document.body.appendChild(button);
 
         button.addEventListener('click', async () => {
           const response = await DeviceOrientationEvent.requestPermission();
           if (response === 'granted') {
-            controls = new DeviceOrientationControls(camera);
-            controls.connect();
-            controls.update();
+            window.addEventListener('deviceorientation', handleOrientation);
             button.remove();
           } else {
             alert('Permesso negato.');
           }
         });
       } else {
-        // Android o desktop
-        controls = new DeviceOrientationControls(camera);
-        controls.connect();
+        // Android & altri
+        window.addEventListener('deviceorientation', handleOrientation);
       }
     }
 
+    function handleOrientation(event) {
+      if (event.alpha === null || event.beta === null || event.gamma === null) return;
+
+      const alpha = THREE.MathUtils.degToRad(event.alpha); // compass
+      const beta = THREE.MathUtils.degToRad(event.beta);   // front-back
+      const gamma = THREE.MathUtils.degToRad(event.gamma); // left-right
+
+      camera.rotation.set(beta - Math.PI / 2, alpha, -gamma);
+    }
+
+    setupDeviceOrientation();
 
 
 
@@ -446,8 +454,6 @@
     function animate() {
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
-      if (controls) controls.update();
-
     }
   </script>
 </body>
