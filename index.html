@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Oswald:wght@200..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
   <title>Punti Interattivi UI</title>
   <style>
     body { margin: 0; overflow: hidden; font-family: sans-serif; }
@@ -12,34 +14,66 @@
       position: fixed;
       top: 0; left: 0;
       width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.6);
-      display: none;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      display: flex;
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    #infoCard.show {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     #infoCardContent {
-      background: white;
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(20px);
       padding: 20px;
-      border-radius: 8px;
-      max-width: 500px;
+      border-radius: 12px;
+      max-width: 300px;
       max-height: 80vh;
       overflow-y: auto;
       position: relative;
+      color: #ffffff;
+      transform: scale(0.95);
+      transition: transform 0.4s ease;
     }
 
-    #closeBtn {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 24px;
-      cursor: pointer;
+    #infoCard.show #infoCardContent {
+      transform: scale(1);
     }
 
     #infoTitle {
       margin-top: 0;
+      margin-right: 50px;
+      font-family: 'cinzel', serif;
+      line-height: 25px;
     }
+
+
+    #closeBtn {
+      position: fixed;
+      width: 30px;
+      height: 30px;
+      top: 20px;
+      right: 20px;
+      font-size: 20px;
+      cursor: pointer;
+      background-color: red;
+      border-radius: 10px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+
+
   </style>
   <script type="importmap">
     {
@@ -55,6 +89,8 @@
     <div id="infoCardContent">
       <span id="closeBtn">&times;</span>
       <h2 id="infoTitle"></h2>
+      <img id="infoImage" src="" alt="info" style="max-width: 100%; margin-bottom: 15px; border-radius: 8px;" />
+
       <p id="infoText"></p>
     </div>
   </div>
@@ -242,32 +278,38 @@
       const infoCard = document.getElementById('infoCard');
       const title = document.getElementById('infoTitle');
       const text = document.getElementById('infoText');
+      const image = document.getElementById('infoImage');
 
       const data = {
         'ROSSO': {
           title: 'Gli Affreschi: La Mano di Teodoro Ghisi',
-          text: 'Il pregio maggiore dell\'Oratorio risiede negli affreschi che ne decorano la volta absidale. Le fonti attribuiscono queste pitture a Teodoro Ghisi (circa 1536-1601), un importante artista mantovano formatosi alla scuola di Giulio Romano e attivo presso la corte dei Gonzaga. Questa attribuzione colloca gli affreschi nel pieno manierismo tardo cinquecentesco.'
+          text: 'Il pregio maggiore dell\'Oratorio risiede negli affreschi che ne decorano la volta absidale. Le fonti attribuiscono queste pitture a Teodoro Ghisi (circa 1536-1601), un importante artista mantovano formatosi alla scuola di Giulio Romano e attivo presso la corte dei Gonzaga. Questa attribuzione colloca gli affreschi nel pieno manierismo tardo cinquecentesco.',
+          image: 'assets/schede/1.jpg'
         },
         'VERDE': {
           title: 'Un Balconcino e Drastiche Trasformazioni',
-          text: 'Originariamente, un dettaglio architettonico significativo era un balconcino che, da una stanza adiacente (probabilmente una camera padronale), permetteva ai Signori di assistere alle funzioni religiose in modo riservato. Tuttavia, la storia dell\'Oratorio è segnata da un cambiamento radicale: in epoca successiva, probabilmente all\'inizio del XX secolo, una parte consistente dell\'antica cappella fu trasformata in un locale bagno, adiacente alla "Camera del Re" approntata per Vittorio Emanuele III nel 1909.'
+          text: 'Originariamente, un dettaglio architettonico significativo era un balconcino che, da una stanza adiacente (probabilmente una camera padronale), permetteva ai Signori di assistere alle funzioni religiose in modo riservato. Tuttavia, la storia dell\'Oratorio è segnata da un cambiamento radicale: in epoca successiva, probabilmente all\'inizio del XX secolo, una parte consistente dell\'antica cappella fu trasformata in un locale bagno, adiacente alla "Camera del Re" approntata per Vittorio Emanuele III nel 1909.',
+          image: 'assets/schede/2.png'
         },
         'BLU': {
           title: 'Iconografia degli Affreschi: Un Mistero da Svelare',
-          text: 'Nonostante l\'attribuzione a Ghisi, i soggetti precisi degli affreschi rimangono in parte oscuri. La denominazione "Oratorio della Natività di Maria" suggerisce che il ciclo potesse illustrare episodi della vita della Vergine. Si ipotizzano scene come la "Trinità che incorona Maria" o l\'"Annunciazione", ma mancano conferme visive o descrizioni dettagliate che ne attestino con certezza l\'iconografia. Lo stile sarebbe tipicamente manierista, con figure dinamiche e complesse, forse influenzato dalle esigenze devozionali della Controriforma.'
+          text: 'Nonostante l\'attribuzione a Ghisi, i soggetti precisi degli affreschi rimangono in parte oscuri. La denominazione "Oratorio della Natività di Maria" suggerisce che il ciclo potesse illustrare episodi della vita della Vergine. Si ipotizzano scene come la "Trinità che incorona Maria" o l\'"Annunciazione", ma mancano conferme visive o descrizioni dettagliate che ne attestino con certezza l\'iconografia. Lo stile sarebbe tipicamente manierista, con figure dinamiche e complesse, forse influenzato dalle esigenze devozionali della Controriforma.',
+          image: 'assets/schede/3.jpg'
         }
       };
 
       if (data[name]) {
         title.innerText = data[name].title;
         text.innerText = data[name].text;
-        infoCard.style.display = 'flex';
+        image.src = data[name].image;
+        infoCard.classList.add('show');
       }
     }
 
     document.getElementById('closeBtn').addEventListener('click', () => {
-      document.getElementById('infoCard').style.display = 'none';
+      document.getElementById('infoCard').classList.remove('show');
     });
+
 
     function animate() {
       requestAnimationFrame(animate);
