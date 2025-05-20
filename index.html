@@ -6,7 +6,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Oswald:wght@200..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Montaga&family=Oswald:wght@200..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 
-
   <title>Punti Interattivi UI</title>
   <style>
     body { margin: 0; overflow: hidden; font-family: sans-serif; }
@@ -50,8 +49,6 @@
       transition: transform 0.4s ease;
     }
 
-
-
     #infoCard.show #infoCardContent {
       transform: scale(1);
     }
@@ -65,10 +62,8 @@
     }
 
     #infoText {
-
       font-family: 'Montaga', serif;
     }
-
 
     #closeBtn {
       position: fixed;
@@ -129,10 +124,24 @@
       cursor: pointer;
     }
 
+    #orientationMessage {
+      font-family: 'Poppins', sans-serif;
+      pointer-events: none;
+    }
 
-
-
-
+    #gyroButton {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: rgba(0,0,0,0.7);
+      color: white;
+      border: none;
+      border-radius: 20px;
+    }
   </style>
   <script type="importmap">
     {
@@ -154,10 +163,7 @@
         <input type="range" id="progressBar" value="0" min="0" step="1" />
         <audio id="audio" src=""></audio>
       </div>
-
       <p id="infoText"></p>
-
-
     </div>
   </div>
 
@@ -180,6 +186,15 @@
     let prevTouchY = 0;
     let mouseMoved = false;
     const clickThreshold = 5;
+
+    // Variabili per il giroscopio
+    let alphaOffset = 0;
+    let betaOffset = 0;
+    let firstOrientation = true;
+    let targetYaw = 0;
+    let targetPitch = 0;
+    const smoothingFactor = 0.1;
+    let gyroEnabled = false;
 
     init();
     animate();
@@ -237,7 +252,7 @@
       });
 
       window.addEventListener('mousemove', (e) => {
-        if (!isMouseDown) return;
+        if (!isMouseDown || gyroEnabled) return;
         const deltaX = e.clientX - prevMouseX;
         const deltaY = e.clientY - prevMouseY;
 
@@ -255,14 +270,14 @@
 
       window.addEventListener('mouseup', (e) => {
         isMouseDown = false;
-        if (!mouseMoved) {
+        if (!mouseMoved && !gyroEnabled) {
           handlePointerSelect(e.clientX, e.clientY);
         }
       });
 
       // Touch events
       window.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
+        if (e.touches.length === 1 && !gyroEnabled) {
           isTouching = true;
           mouseMoved = false;
           prevTouchX = e.touches[0].clientX;
@@ -271,7 +286,7 @@
       }, { passive: true });
 
       window.addEventListener('touchmove', (e) => {
-        if (!isTouching || e.touches.length !== 1) return;
+        if (!isTouching || e.touches.length !== 1 || gyroEnabled) return;
 
         const touchX = e.touches[0].clientX;
         const touchY = e.touches[0].clientY;
@@ -292,11 +307,14 @@
 
       window.addEventListener('touchend', (e) => {
         isTouching = false;
-        if (!mouseMoved && e.changedTouches.length === 1) {
+        if (!mouseMoved && e.changedTouches.length === 1 && !gyroEnabled) {
           const touch = e.changedTouches[0];
           handlePointerSelect(touch.clientX, touch.clientY);
         }
       }, { passive: true });
+
+      // Setup giroscopio
+      setupDeviceOrientation();
     }
 
     function createLabelSprite(text, color = '#00FFAA') {
@@ -392,7 +410,6 @@
       document.getElementById('infoCard').classList.remove('show');
     });
 
-
     const audio = document.getElementById('audio');
     const playPauseBtn = document.getElementById('playPauseBtn');
     const progressBar = document.getElementById('progressBar');
@@ -407,7 +424,6 @@
       }
     });
 
-    // Aggiorna la barra mentre l'audio avanza
     audio.addEventListener('timeupdate', () => {
       if (!isNaN(audio.duration)) {
         progressBar.max = Math.floor(audio.duration);
@@ -415,58 +431,104 @@
       }
     });
 
-    // Quando l'utente muove la barra, cambia il tempo dell'audio
     progressBar.addEventListener('input', () => {
       audio.currentTime = progressBar.value;
     });
 
     function setupDeviceOrientation() {
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS
-        const button = document.createElement('button');
-        button.innerText = 'Attiva Giroscopio';
-        button.style.position = 'absolute';
-        button.style.top = '20px';
-        button.style.left = '20px';
-        button.style.zIndex = '2000';
-        button.style.padding = '10px 20px';
-        button.style.fontSize = '16px';
-        document.body.appendChild(button);
+      const button = document.createElement('button');
+      button.id = 'gyroButton';
+      button.innerText = 'Attiva Giroscopio';
+      document.body.appendChild(button);
 
-        button.addEventListener('click', async () => {
-          const response = await DeviceOrientationEvent.requestPermission();
-          if (response === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation);
-            button.remove();
+      button.addEventListener('click', async () => {
+        try {
+          if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // iOS 13+
+            const response = await DeviceOrientationEvent.requestPermission();
+            if (response === 'granted') {
+              enableGyro();
+              button.remove();
+            } else {
+              alert('Per una migliore esperienza, ti consigliamo di concedere il permesso per il giroscopio.');
+            }
           } else {
-            alert('Permesso negato.');
+            // Android e altri browser
+            enableGyro();
+            button.remove();
           }
-        });
-      } else {
-        // Android & altri
-        window.addEventListener('deviceorientation', handleOrientation);
-      }
+        } catch (error) {
+          console.error('Errore richiesta permesso:', error);
+        }
+      });
+    }
+
+    function enableGyro() {
+      gyroEnabled = true;
+      window.addEventListener('deviceorientation', handleOrientation);
+      addOrientationMessage();
     }
 
     function handleOrientation(event) {
-      if (event.alpha === null || event.beta === null || event.gamma === null) return;
+      if (!gyroEnabled || event.alpha === null || event.beta === null || event.gamma === null) return;
 
-      const alpha = THREE.MathUtils.degToRad(event.alpha); // rotazione orizzontale (compass)
-      const beta = THREE.MathUtils.degToRad(event.beta);   // inclinazione front-back
-      // const gamma = THREE.MathUtils.degToRad(event.gamma); // inclinazione laterale (che ignoriamo)
+      // Calibrazione iniziale
+      if (firstOrientation) {
+        alphaOffset = event.alpha;
+        betaOffset = event.beta;
+        firstOrientation = false;
+        return;
+      }
 
-      camera.rotation.set(beta - Math.PI / 2, alpha, 0); // impostiamo gamma = 0
+      // Normalizza gli angoli
+      const alpha = THREE.MathUtils.degToRad(event.alpha - alphaOffset);
+      const beta = THREE.MathUtils.degToRad(event.beta - betaOffset);
+
+      // Aggiorna i target per lo smoothing
+      targetYaw = -alpha;
+      targetPitch = -beta;
+      
+      // Limita la rotazione verticale
+      targetPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, targetPitch));
     }
 
-    setupDeviceOrientation();
+    function addOrientationMessage() {
+      const message = document.createElement('div');
+      message.innerHTML = 'Ruota il dispositivo per esplorare la scena<br>⬅️ ➡️ ⬆️ ⬇️';
+      message.style.position = 'absolute';
+      message.style.bottom = '60px';
+      message.style.left = '50%';
+      message.style.transform = 'translateX(-50%)';
+      message.style.zIndex = '2000';
+      message.style.padding = '10px 20px';
+      message.style.fontSize = '16px';
+      message.style.backgroundColor = 'rgba(0,0,0,0.7)';
+      message.style.color = 'white';
+      message.style.borderRadius = '20px';
+      message.style.textAlign = 'center';
+      message.id = 'orientationMessage';
+      document.body.appendChild(message);
 
+      setTimeout(() => {
+        const msg = document.getElementById('orientationMessage');
+        if (msg) msg.remove();
+      }, 5000);
+    }
 
-
-
-
+    window.addEventListener('orientationchange', () => {
+      // Resetta gli offset quando il dispositivo ruota
+      firstOrientation = true;
+    });
 
     function animate() {
       requestAnimationFrame(animate);
+      
+      // Applica smoothing al movimento
+      if (gyroEnabled) {
+        yawObject.rotation.y += (targetYaw - yawObject.rotation.y) * smoothingFactor;
+        pitchObject.rotation.x += (targetPitch - pitchObject.rotation.x) * smoothingFactor;
+      }
+      
       renderer.render(scene, camera);
     }
   </script>
