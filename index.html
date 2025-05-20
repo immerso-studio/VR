@@ -36,7 +36,7 @@
       padding: 20px;
       border-radius: 12px;
       max-width: 300px;
-      max-height: 80vh;
+      max-height: 70vh;
       overflow-y: auto;
       position: relative;
       color: #ffffff;
@@ -75,8 +75,8 @@
     #audioPlayer {
       display: none;
       position: relative;
-      margin-top: 20px;
-      padding: 10px 15px;
+      margin-top: 10px;
+      padding: 10px 10px;
       background: rgba(255, 255, 255, 0.2);
       backdrop-filter: blur(10px);
       border-radius: 12px;
@@ -405,6 +405,48 @@
     progressBar.addEventListener('input', () => {
       audio.currentTime = progressBar.value;
     });
+
+    function setupDeviceOrientation() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS
+        const button = document.createElement('button');
+        button.innerText = 'Attiva Giroscopio';
+        button.style.position = 'absolute';
+        button.style.top = '20px';
+        button.style.left = '20px';
+        button.style.zIndex = '2000';
+        button.style.padding = '10px 20px';
+        button.style.fontSize = '16px';
+        document.body.appendChild(button);
+
+        button.addEventListener('click', async () => {
+          const response = await DeviceOrientationEvent.requestPermission();
+          if (response === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+            button.remove();
+          } else {
+            alert('Permesso negato.');
+          }
+        });
+      } else {
+        // Android & altri
+        window.addEventListener('deviceorientation', handleOrientation);
+      }
+    }
+
+    function handleOrientation(event) {
+      if (event.alpha === null || event.beta === null || event.gamma === null) return;
+
+      const alpha = THREE.MathUtils.degToRad(event.alpha); // compass
+      const beta = THREE.MathUtils.degToRad(event.beta);   // front-back
+      const gamma = THREE.MathUtils.degToRad(event.gamma); // left-right
+
+      camera.rotation.set(beta - Math.PI / 2, alpha, -gamma);
+    }
+
+    setupDeviceOrientation();
+
+
 
 
 
