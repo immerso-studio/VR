@@ -6,6 +6,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Oswald:wght@200..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Montaga&family=Oswald:wght@200..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 
+
   <title>Punti Interattivi UI</title>
   <style>
     body { margin: 0; overflow: hidden; font-family: sans-serif; }
@@ -49,6 +50,8 @@
       transition: transform 0.4s ease;
     }
 
+
+
     #infoCard.show #infoCardContent {
       transform: scale(1);
     }
@@ -62,26 +65,17 @@
     }
 
     #infoText {
+
       font-family: 'Montaga', serif;
     }
 
+
     #closeBtn {
-      position: fixed; /* Changed to fixed to be relative to viewport like infoCard */
+      position: fixed;
       width: 30px;
       height: 30px;
-      /* Adjust top/right to be relative to infoCardContent if desired, or keep relative to viewport */
-      /* For example, if you want it inside the card at top right of card: */
-      /* top: calc(50% - 35vh + 20px); /* Adjust based on max-height and padding */
-      /* right: calc(50% - 150px + 20px); /* Adjust based on max-width and padding */
-      /* For simplicity, keeping it relative to the card's general area might be easier if card is centered */
-      /* The following positions it at the top right of the visible card area */
-      top: 20px; /* This was likely intended to be relative to infoCardContent edges */
-      right: 20px; /* This was likely intended to be relative to infoCardContent edges */
-      /* IF #infoCardContent is the reference for closeBtn, position:absolute on closeBtn, position:relative on infoCardContent */
-      /* With current setup (closeBtn outside infoCardContent in HTML, but styled as fixed), it is relative to viewport */
-      /* Let's assume it should be relative to the infoCardContent visually */
-      /* The easiest way is to put it INSIDE infoCardContent in HTML, then style with position:absolute */
-      /* Corrected placement of close button in HTML structure below for this styling to make more sense */
+      top: 20px;
+      right: 20px;
       font-size: 20px;
       cursor: pointer;
       background-color: red;
@@ -90,11 +84,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 1001; /* Ensure it's above infoCardContent */
     }
 
     #audioPlayer {
-      /* display: none; /* This is handled by JS, so initial display:flex is fine and then hidden by JS */
+      display: none;
       position: relative;
       margin-top: 10px;
       padding: 10px 10px;
@@ -124,27 +117,21 @@
       border-radius: 5px;
       background: #ddd;
       appearance: none;
-      -webkit-appearance: none; /* For Safari */
       cursor: pointer;
     }
 
     #audioPlayer input[type="range"]::-webkit-slider-thumb {
       appearance: none;
-      -webkit-appearance: none; /* For Safari */
       width: 12px;
       height: 12px;
       border-radius: 50%;
       background: #333;
       cursor: pointer;
     }
-    #audioPlayer input[type="range"]::-moz-range-thumb { /* For Firefox */
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #333;
-        cursor: pointer;
-        border: none;
-    }
+
+
+
+
 
   </style>
   <script type="importmap">
@@ -159,13 +146,18 @@
 <body>
   <div id="infoCard">
     <div id="infoCardContent">
-      <span id="closeBtn">&times;</span> <h2 id="infoTitle"></h2>
+      <span id="closeBtn">&times;</span>
+      <h2 id="infoTitle"></h2>
       <img id="infoImage" src="" alt="info" style="max-width: 100%; margin-bottom: 15px; border-radius: 8px;" />
-      <div id="audioPlayer" style="display: none;"> <button id="playPauseBtn">⏵︎</button>
+      <div id="audioPlayer">
+        <button id="playPauseBtn">⏵︎</button>
         <input type="range" id="progressBar" value="0" min="0" step="1" />
         <audio id="audio" src=""></audio>
       </div>
+
       <p id="infoText"></p>
+
+
     </div>
   </div>
 
@@ -189,12 +181,6 @@
     let mouseMoved = false;
     const clickThreshold = 5;
 
-    // --- Gyroscope State Variables ---
-    let initialDeviceAlpha = null;
-    let initialYawObjectRotationY = null;
-    let isGyroActive = false; // Flag to manage control priority
-    // ---------------------------------
-
     init();
     animate();
 
@@ -208,7 +194,7 @@
       pitchObject.add(camera);
 
       yawObject = new THREE.Object3D();
-      yawObject.position.y = 1.5; // Camera height
+      yawObject.position.y = 1.5;
       yawObject.add(pitchObject);
 
       scene.add(yawObject);
@@ -228,10 +214,8 @@
       loader.setDRACOLoader(dracoLoader);
       loader.load('assets/Stanza-scansionata-1.glb', (gltf) => {
         const model = gltf.scene;
-        model.position.set(0, 0, 0); // Ensure model is at origin or adjust as needed
+        model.position.set(0, 0, 0);
         scene.add(model);
-      }, undefined, (error) => {
-        console.error('An error happened loading the GLB model:', error);
       });
 
       addInteractivePoint(new THREE.Vector3(1.7, 1.7, 0), '#ff0000', 'ROSSO');
@@ -246,7 +230,6 @@
 
       // Mouse events
       window.addEventListener('mousedown', (e) => {
-        if (isGyroActive) return; // Ignore if gyro is active
         isMouseDown = true;
         mouseMoved = false;
         prevMouseX = e.clientX;
@@ -254,7 +237,6 @@
       });
 
       window.addEventListener('mousemove', (e) => {
-        if (isGyroActive) return; // Ignore if gyro is active
         if (!isMouseDown) return;
         const deltaX = e.clientX - prevMouseX;
         const deltaY = e.clientY - prevMouseY;
@@ -272,34 +254,23 @@
       });
 
       window.addEventListener('mouseup', (e) => {
-        if (isGyroActive && isMouseDown) { // If gyro became active during mousedown, just reset
-            isMouseDown = false;
-            return;
-        }
-        if (!isMouseDown && !isGyroActive) return; // If not mouse down (e.g. gyro took over) and gyro not active.
-                                                 // This case might be complex if gyro activates mid-drag.
-                                                 // Simpler: let mouseup always reset isMouseDown if it was true.
-        
-        const wasMouseDown = isMouseDown; // Store state before resetting
         isMouseDown = false;
-        if (!mouseMoved && wasMouseDown && !isGyroActive) { // only fire click if mouse didn't move, was down, and gyro not active
+        if (!mouseMoved) {
           handlePointerSelect(e.clientX, e.clientY);
         }
       });
 
       // Touch events
       window.addEventListener('touchstart', (e) => {
-        if (isGyroActive) return; // Ignore if gyro is active
         if (e.touches.length === 1) {
           isTouching = true;
-          mouseMoved = false; // Re-using mouseMoved for touch simplicity
+          mouseMoved = false;
           prevTouchX = e.touches[0].clientX;
           prevTouchY = e.touches[0].clientY;
         }
-      }, { passive: true }); // passive:true is good for touch performance
+      }, { passive: true });
 
       window.addEventListener('touchmove', (e) => {
-        if (isGyroActive) return; // Ignore if gyro is active
         if (!isTouching || e.touches.length !== 1) return;
 
         const touchX = e.touches[0].clientX;
@@ -320,82 +291,62 @@
       }, { passive: true });
 
       window.addEventListener('touchend', (e) => {
-        if (isGyroActive && isTouching) { // If gyro became active during touch, just reset
-            isTouching = false;
-            return;
-        }
-        const wasTouching = isTouching;
-        isTouching = false; // Always reset
-        if (!mouseMoved && wasTouching && e.changedTouches.length === 1 && !isGyroActive) { // check wasTouching
+        isTouching = false;
+        if (!mouseMoved && e.changedTouches.length === 1) {
           const touch = e.changedTouches[0];
           handlePointerSelect(touch.clientX, touch.clientY);
         }
       }, { passive: true });
-
-      setupDeviceOrientation(); // Call to setup gyroscope
     }
 
     function createLabelSprite(text, color = '#00FFAA') {
       const canvas = document.createElement('canvas');
-      canvas.width = 256; // Increased size for better glow effect space
+      canvas.width = 256;
       canvas.height = 256;
       const ctx = canvas.getContext('2d');
-      const radius = 64; // Radius of the circle
-      const glowBlur = 30; // Blur amount for glow
-      const glowOffset = 0; // No offset for the shadow
 
       ctx.beginPath();
-      ctx.arc(canvas.width / 2, canvas.height / 2, radius, 0, Math.PI * 2);
+      ctx.arc(128, 128, 20, 0, Math.PI * 2);
       ctx.fillStyle = color;
-      ctx.shadowColor = color; // Glow color same as fill
-      ctx.shadowBlur = glowBlur;
-      ctx.shadowOffsetX = glowOffset;
-      ctx.shadowOffsetY = glowOffset;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 25;
       ctx.fill();
 
-      // To make the sprite smaller, we adjust the scale of the sprite itself, not the canvas drawing
       const texture = new THREE.CanvasTexture(canvas);
-      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false });
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
       const sprite = new THREE.Sprite(material);
-      sprite.scale.set(0.3, 0.3, 0.3); // Adjust scale to make the point visually smaller
+      sprite.scale.set(1, 1, 1);
       return sprite;
     }
 
     function addInteractivePoint(position, color, name) {
       const sprite = createLabelSprite(name, color);
       sprite.position.copy(position);
-      sprite.name = name; // Used for identification on click
+      sprite.name = name;
       scene.add(sprite);
       clickableObjects.push(sprite);
     }
 
     function handlePointerSelect(x, y) {
-      if (document.getElementById('infoCard').classList.contains('show')) {
-        return; // Don't re-trigger if card is already shown
-      }
       mouse.x = (x / window.innerWidth) * 2 - 1;
       mouse.y = -(y / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(clickableObjects, false); // Non-recursive
+      const intersects = raycaster.intersectObjects(clickableObjects);
 
       if (intersects.length > 0) {
-        const clickedObject = intersects[0].object;
-        if (clickedObject instanceof THREE.Sprite) { // Ensure it's one of our sprites
-            showInfoCard(clickedObject.name);
-        }
+        const clickedName = intersects[0].object.name;
+        showInfoCard(clickedName);
       }
     }
 
     function showInfoCard(name) {
       const infoCard = document.getElementById('infoCard');
-      const titleEl = document.getElementById('infoTitle');
-      const textEl = document.getElementById('infoText');
-      const imageEl = document.getElementById('infoImage');
-      const audioEl = document.getElementById('audio');
-      const audioPlayerEl = document.getElementById('audioPlayer');
-      const playPauseBtn = document.getElementById('playPauseBtn');
-
+      const title = document.getElementById('infoTitle');
+      const text = document.getElementById('infoText');
+      const image = document.getElementById('infoImage');
+      const audio = document.getElementById('audio');
+      const audioPlayer = document.getElementById('audioPlayer');
 
       const data = {
         'ROSSO': {
@@ -419,16 +370,11 @@
       };
 
       if (data[name]) {
-        titleEl.innerText = data[name].title;
-        textEl.innerText = data[name].text;
-        imageEl.src = data[name].image;
-        audioEl.src = data[name].audio;
-
-        audioEl.currentTime = 0; // Reset audio
-        playPauseBtn.textContent = '⏵︎'; // Reset button
-        document.getElementById('progressBar').value = 0; // Reset progress bar
-
-        audioPlayerEl.style.display = 'flex';
+        title.innerText = data[name].title;
+        text.innerText = data[name].text;
+        image.src = data[name].image;
+        audio.src = data[name].audio;
+        audioPlayer.style.display = 'flex';
         infoCard.classList.add('show');
       }
     }
@@ -437,21 +383,15 @@
       const audio = document.getElementById('audio');
       const playPauseBtn = document.getElementById('playPauseBtn');
       const audioPlayer = document.getElementById('audioPlayer');
-      const infoCard = document.getElementById('infoCard');
 
       audio.pause();
       audio.currentTime = 0;
       playPauseBtn.textContent = '⏵︎';
-      // audioPlayer.style.display = 'none'; // Hide it again when card closes
+      audioPlayer.style.display = 'none';
 
-      infoCard.classList.remove('show');
-      // Delay hiding audioplayer to allow fade out of card
-      setTimeout(() => {
-        if (!infoCard.classList.contains('show')) { // Check if still hidden
-            audioPlayer.style.display = 'none';
-        }
-      }, 400); // Match transition duration
+      document.getElementById('infoCard').classList.remove('show');
     });
+
 
     const audio = document.getElementById('audio');
     const playPauseBtn = document.getElementById('playPauseBtn');
@@ -467,126 +407,66 @@
       }
     });
 
-    audio.addEventListener('loadedmetadata', () => {
-        if (!isNaN(audio.duration)) {
-            progressBar.max = Math.floor(audio.duration);
-        }
-    });
+    // Aggiorna la barra mentre l'audio avanza
     audio.addEventListener('timeupdate', () => {
-      if (!isNaN(audio.duration)) { // Ensure duration is available
+      if (!isNaN(audio.duration)) {
+        progressBar.max = Math.floor(audio.duration);
         progressBar.value = Math.floor(audio.currentTime);
       }
     });
-    audio.addEventListener('ended', () => {
-        playPauseBtn.textContent = '⏵︎';
-        progressBar.value = 0; // Reset progress bar or to max if you prefer
-        audio.currentTime = 0; // Reset for replay
-    });
 
-
+    // Quando l'utente muove la barra, cambia il tempo dell'audio
     progressBar.addEventListener('input', () => {
       audio.currentTime = progressBar.value;
     });
 
     function setupDeviceOrientation() {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS 13+
+        // iOS
         const button = document.createElement('button');
-        button.id = 'gyroButton';
         button.innerText = 'Attiva Giroscopio';
-        button.style.position = 'fixed'; // Changed to fixed
-        button.style.bottom = '20px';    // Positioned at bottom
-        button.style.left = '50%';
-        button.style.transform = 'translateX(-50%)';
+        button.style.position = 'absolute';
+        button.style.top = '20px';
+        button.style.left = '20px';
         button.style.zIndex = '2000';
         button.style.padding = '10px 20px';
         button.style.fontSize = '16px';
-        button.style.backgroundColor = 'rgba(0,0,0,0.5)';
-        button.style.color = 'white';
-        button.style.border = '1px solid white';
-        button.style.borderRadius = '5px';
-        button.style.cursor = 'pointer';
         document.body.appendChild(button);
 
         button.addEventListener('click', async () => {
-          try {
-            const response = await DeviceOrientationEvent.requestPermission();
-            if (response === 'granted') {
-              window.addEventListener('deviceorientation', handleOrientation);
-              button.remove(); // Remove button after permission granted
-            } else {
-              alert('Permesso al giroscopio negato.');
-              // Optionally disable gyro-related features or provide alternative controls
-              isGyroActive = false; // Ensure gyro is considered inactive
-            }
-          } catch (error) {
-            console.error("Errore durante la richiesta di permesso per il giroscopio:", error);
-            alert('Errore nell\'attivazione del giroscopio.');
-            isGyroActive = false;
+          const response = await DeviceOrientationEvent.requestPermission();
+          if (response === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+            button.remove();
+          } else {
+            alert('Permesso negato.');
           }
         });
       } else {
-        // Non-iOS 13+ devices or other browsers that don't need explicit permission
-        // Check if DeviceOrientationEvent is supported at all
-        if ('DeviceOrientationEvent' in window) {
-            window.addEventListener('deviceorientation', handleOrientation);
-        } else {
-            console.log("DeviceOrientationEvent not supported on this device/browser.");
-            // Optionally inform user that gyro is not available
-        }
+        // Android & altri
+        window.addEventListener('deviceorientation', handleOrientation);
       }
     }
 
     function handleOrientation(event) {
-      if (event.alpha === null || event.beta === null || event.gamma === null) {
-        // Some devices might fire event once with nulls then stop if sensor is unavailable
-        // Or it could be a temporary issue.
-        // If gyro was active, you might want to set isGyroActive = false here or have a timeout.
-        return;
-      }
+      if (event.alpha === null || event.beta === null || event.gamma === null) return;
 
-      const currentDeviceAlpha = THREE.MathUtils.degToRad(event.alpha);
-      const currentDeviceBeta = THREE.MathUtils.degToRad(event.beta);
-      // const currentDeviceGamma = THREE.MathUtils.degToRad(event.gamma); // Roll - currently unused but available
+      const alpha = THREE.MathUtils.degToRad(event.alpha); // rotazione orizzontale (compass)
+      const beta = THREE.MathUtils.degToRad(event.beta);   // inclinazione front-back
+      // const gamma = THREE.MathUtils.degToRad(event.gamma); // inclinazione laterale (che ignoriamo)
 
-      if (!isGyroActive) { // First valid event, perform calibration
-        initialDeviceAlpha = currentDeviceAlpha;
-        initialYawObjectRotationY = yawObject.rotation.y;
-        isGyroActive = true;
-        console.log("Gyroscope activated and calibrated.");
-        // Hide gyro button if it's still there (e.g. for Android where it wasn't removed)
-        const gyroButton = document.getElementById('gyroButton');
-        if (gyroButton) gyroButton.style.display = 'none';
-      }
-      // This check is vital: if isGyroActive somehow becomes false later, stop processing.
-      // However, with current logic, once true, it stays true unless explicitly reset.
-      if (!isGyroActive) return;
-
-
-      let deltaAlpha = currentDeviceAlpha - initialDeviceAlpha;
-      // Normalize deltaAlpha to handle wrap-around (0 to 2PI)
-      if (deltaAlpha > Math.PI) {
-        deltaAlpha -= (2 * Math.PI);
-      } else if (deltaAlpha < -Math.PI) {
-        deltaAlpha += (2 * Math.PI);
-      }
-
-      yawObject.rotation.y = initialYawObjectRotationY - deltaAlpha;
-
-      // Beta (device's X-axis rotation) for pitch.
-      // Standard interpretation: beta=0 when device is flat (screen up), beta=PI/2 (90deg) when upright.
-      // pitchObject.rotation.x: positive looks UP.
-      // So, when device is upright (beta=PI/2), targetPitch should be 0.
-      // When device tilts forward (beta approaches 0), targetPitch should be negative (look DOWN).
-      let targetPitch = currentDeviceBeta - (Math.PI / 2);
-      pitchObject.rotation.x = targetPitch;
-
-      pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchObject.rotation.x));
+      camera.rotation.set(beta - Math.PI / 2, alpha, 0); // impostiamo gamma = 0
     }
+
+    setupDeviceOrientation();
+
+
+
+
+
 
     function animate() {
       requestAnimationFrame(animate);
-      // Update controls or other animations here if needed
       renderer.render(scene, camera);
     }
   </script>
