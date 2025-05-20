@@ -441,7 +441,8 @@
       const beta = THREE.MathUtils.degToRad(event.beta);   // front-back
       const gamma = THREE.MathUtils.degToRad(event.gamma); // left-right
 
-      camera.rotation.set(beta - Math.PI / 2, alpha, -gamma);
+      camera.rotation.set(0, alpha, 0);
+
     }
 
     setupDeviceOrientation();
