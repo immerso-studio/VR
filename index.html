@@ -435,15 +435,17 @@
     }
 
     function handleOrientation(event) {
-      if (event.alpha === null || event.beta === null || event.gamma === null) return;
+      if (event.alpha === null || event.beta === null) return;
 
-      const alpha = THREE.MathUtils.degToRad(event.alpha); // Y - orizzontale (compass)
-      const beta = THREE.MathUtils.degToRad(event.beta);   // X - su/giù
-      // Ignora gamma (roll laterale)
+      const alpha = THREE.MathUtils.degToRad(event.alpha); // rotazione orizzontale (compasso)
+      const beta = THREE.MathUtils.degToRad(event.beta);   // inclinazione verticale
 
-      const euler = new THREE.Euler();
-      euler.set(beta - Math.PI / 2, alpha, 0, 'YXZ'); // orientamento stabile orizzontale
-      yawObject.quaternion.setFromEuler(euler);
+      // Limita il beta (pitch) per evitare la rotazione selvaggia
+      const maxPitch = THREE.MathUtils.degToRad(85); // ~85 gradi massimo su/giù
+      const limitedPitch = Math.max(-maxPitch, Math.min(maxPitch, beta - Math.PI / 2));
+
+      yawObject.rotation.y = alpha;
+      pitchObject.rotation.x = limitedPitch;
     }
 
 
