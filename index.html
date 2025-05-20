@@ -561,8 +561,9 @@
       deltaBeta = Math.max(-Math.PI/2, Math.min(Math.PI/2, deltaBeta));
       
       // Applica le rotazioni sulla struttura degli oggetti già preparati per il controllo del mouse
-      yawObject.rotation.y = -deltaAlpha; // Rotazione orizzontale
-      pitchObject.rotation.x = deltaBeta;  // Inclinazione verticale
+      yawObject.rotation.y = deltaAlpha; // rimuovo il "-" per rendere il movimento orizzontale naturale
+      pitchObject.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, deltaBeta)); // limito inclinazione verticale a ±60°
+
       
       // Aggiorna l'indicatore di debugging con i valori attuali
       if (document.getElementById('gyro-indicator')) {
