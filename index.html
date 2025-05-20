@@ -181,6 +181,12 @@
     let mouseMoved = false;
     const clickThreshold = 5;
 
+    // Variabili per il controllo del giroscopio
+    let initialAlpha = null;
+    let initialBeta = null;
+    let initialGamma = null;
+    let deviceOrientationControls = false;
+
     init();
     animate();
 
@@ -297,6 +303,11 @@
           handlePointerSelect(touch.clientX, touch.clientY);
         }
       }, { passive: true });
+      
+      // Inizializza il sistema del giroscopio
+      setupDeviceOrientation();
+      // Aggiungi il pulsante di calibrazione
+      addCalibrateButton();
     }
 
     function createLabelSprite(text, color = '#00FFAA') {
@@ -420,9 +431,10 @@
       audio.currentTime = progressBar.value;
     });
 
+    // FUNZIONI MIGLIORATE PER IL CONTROLLO DEL GIROSCOPIO
     function setupDeviceOrientation() {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS
+        // iOS 13+ richiede l'autorizzazione esplicita
         const button = document.createElement('button');
         button.innerText = 'Attiva Giroscopio';
         button.style.position = 'absolute';
@@ -431,39 +443,182 @@
         button.style.zIndex = '2000';
         button.style.padding = '10px 20px';
         button.style.fontSize = '16px';
+        button.style.backgroundColor = '#4CAF50';
+        button.style.color = 'white';
+        button.style.border = 'none';
+        button.style.borderRadius = '5px';
         document.body.appendChild(button);
 
         button.addEventListener('click', async () => {
-          const response = await DeviceOrientationEvent.requestPermission();
-          if (response === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation);
-            button.remove();
-          } else {
-            alert('Permesso negato.');
+          try {
+            const response = await DeviceOrientationEvent.requestPermission();
+            if (response === 'granted') {
+              enableDeviceOrientation();
+              button.remove();
+            } else {
+              alert('Permesso negato per il giroscopio.');
+            }
+          } catch (error) {
+            console.error('Errore durante la richiesta dei permessi:', error);
+            alert('Si è verificato un errore durante la richiesta dei permessi.');
           }
         });
       } else {
-        // Android & altri
-        window.addEventListener('deviceorientation', handleOrientation);
+        // Android e altri dispositivi che non richiedono autorizzazione esplicita
+        // Aggiungiamo comunque un pulsante per attivare/disattivare manualmente
+        const button = document.createElement('button');
+        button.innerText = 'Attiva Giroscopio';
+        button.style.position = 'absolute';
+        button.style.top = '20px';
+        button.style.left = '20px';
+        button.style.zIndex = '2000';
+        button.style.padding = '10px 20px';
+        button.style.fontSize = '16px';
+        button.style.backgroundColor = '#4CAF50';
+        button.style.color = 'white';
+        button.style.border = 'none';  
+        button.style.borderRadius = '5px';
+        document.body.appendChild(button);
+        
+        button.addEventListener('click', () => {
+          enableDeviceOrientation();
+          button.remove();
+        });
       }
     }
 
-    function handleOrientation(event) {
-      if (event.alpha === null || event.beta === null || event.gamma === null) return;
-
-      const alpha = THREE.MathUtils.degToRad(event.alpha); // rotazione orizzontale (compass)
-      const beta = THREE.MathUtils.degToRad(event.beta);   // inclinazione front-back
-      // const gamma = THREE.MathUtils.degToRad(event.gamma); // inclinazione laterale (che ignoriamo)
-
-      camera.rotation.set(beta - Math.PI / 2, alpha, 0); // impostiamo gamma = 0
+    function enableDeviceOrientation() {
+      // Reset iniziale e attivazione del controllo dell'orientamento
+      initialAlpha = null;
+      initialBeta = null;
+      initialGamma = null;
+      deviceOrientationControls = true;
+      
+      // Aggiungi un indicatore visivo che il giroscopio è attivo
+      const indicator = document.createElement('div');
+      indicator.id = 'gyro-indicator';
+      indicator.innerText = 'Giroscopio Attivo';
+      indicator.style.position = 'absolute';
+      indicator.style.top = '20px';
+      indicator.style.left = '20px';
+      indicator.style.backgroundColor = 'rgba(0,0,0,0.5)';
+      indicator.style.color = 'white';
+      indicator.style.padding = '5px 10px';
+      indicator.style.borderRadius = '5px';
+      indicator.style.fontSize = '12px';
+      indicator.style.zIndex = '2000';
+      document.body.appendChild(indicator);
+      
+      // Crea un pulsante per disattivare il giroscopio
+      const disableButton = document.createElement('button');
+      disableButton.innerText = 'Disattiva Giroscopio';
+      disableButton.style.position = 'absolute';
+      disableButton.style.top = '50px';
+      disableButton.style.left = '20px';
+      disableButton.style.zIndex = '2000';
+      disableButton.style.padding = '5px 10px';
+      disableButton.style.fontSize = '12px';
+      disableButton.style.backgroundColor = '#f44336';
+      disableButton.style.color = 'white';
+      disableButton.style.border = 'none';
+      disableButton.style.borderRadius = '5px';
+      document.body.appendChild(disableButton);
+      
+      disableButton.addEventListener('click', () => {
+        deviceOrientationControls = false;
+        document.getElementById('gyro-indicator').remove();
+        disableButton.remove();
+        
+        // Ripristina il pulsante di attivazione
+        setupDeviceOrientation();
+      });
+      
+      window.addEventListener('deviceorientation', handleOrientation);
     }
 
-    setupDeviceOrientation();
+    function handleOrientation(event) {
+      if (!deviceOrientationControls) return;
+      
+      // Verifica se i valori sono disponibili
+      if (event.alpha === null || event.beta === null || event.gamma === null) {
+        console.warn('Valori di orientamento non disponibili');
+        return;
+      }
+      
+      // Calibra i valori iniziali solo la prima volta
+      if (initialAlpha === null) {
+        initialAlpha = event.alpha;
+        initialBeta = event.beta;
+        initialGamma = event.gamma;
+        return;
+      }
+      
+      // Calcola le differenze rispetto all'orientamento iniziale
+      let deltaAlpha = THREE.MathUtils.degToRad(event.alpha - initialAlpha);
+      let deltaBeta = THREE.MathUtils.degToRad(event.beta - initialBeta);
+      
+      // Limita l'inclinazione verticale per evitare movimenti estremi
+      deltaBeta = Math.max(-Math.PI/2, Math.min(Math.PI/2, deltaBeta));
+      
+      // Applica le rotazioni sulla struttura degli oggetti già preparati per il controllo del mouse
+      yawObject.rotation.y = -deltaAlpha; // Rotazione orizzontale
+      pitchObject.rotation.x = deltaBeta;  // Inclinazione verticale
+      
+      // Aggiorna l'indicatore di debugging con i valori attuali
+      if (document.getElementById('gyro-indicator')) {
+        document.getElementById('gyro-indicator').innerText = 
+          `Giroscopio: α=${Math.round(event.alpha)}° β=${Math.round(event.beta)}°`;
+      }
+    }
 
+    // Funzione per calibrare/ricalibrare il giroscopio
+    function calibrateGyroscope() {
+      initialAlpha = null;
+      initialBeta = null;
+      initialGamma = null;
+      
+      // Mostra un messaggio temporaneo di calibrazione
+      const calibMsg = document.createElement('div');
+      calibMsg.innerText = 'Calibrazione in corso...';
+      calibMsg.style.position = 'absolute';
+      calibMsg.style.top = '50%';
+      calibMsg.style.left = '50%';
+      calibMsg.style.transform = 'translate(-50%, -50%)';
+      calibMsg.style.backgroundColor = 'rgba(0,0,0,0.7)';
+      calibMsg.style.color = 'white';
+      calibMsg.style.padding = '20px';
+      calibMsg.style.borderRadius = '10px';
+      calibMsg.style.fontSize = '18px';
+      calibMsg.style.zIndex = '3000';
+      document.body.appendChild(calibMsg);
+      
+      // Rimuovi il messaggio dopo 2 secondi
+      setTimeout(() => {
+        calibMsg.remove();
+      }, 2000);
+    }
 
-
-
-
+    // Aggiungi un pulsante di calibrazione che sarà disponibile quando il giroscopio è attivo
+    function addCalibrateButton() {
+      const calibButton = document.createElement('button');
+      calibButton.id = 'calibrate-button';
+      calibButton.innerText = 'Calibra Giroscopio';
+      calibButton.style.position = 'absolute';
+      calibButton.style.bottom = '20px';
+      calibButton.style.left = '20px';
+      calibButton.style.zIndex = '2000';
+      calibButton.style.padding = '8px 15px';
+      calibButton.style.fontSize = '14px';
+      calibButton.style.backgroundColor = '#2196F3';
+      calibButton.style.color = 'white';
+      calibButton.style.border = 'none';
+      calibButton.style.borderRadius = '5px';
+      document.body.appendChild(calibButton);
+      
+      calibButton.addEventListener('click', calibrateGyroscope);
+      
+      return calibButton;
+    }
 
     function animate() {
       requestAnimationFrame(animate);
