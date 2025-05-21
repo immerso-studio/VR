@@ -55,10 +55,10 @@
       document.body.appendChild(VRButton.createButton(renderer));
 
       camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(0.3, 1.6, 0);
+      camera.position.set(0.3, 1.5, 0);
 
       cameraRig = new THREE.Group();                  // <== cameraRig
-      cameraRig.position.set(0, 0, 3);                // <== posizione iniziale
+      cameraRig.position.set(0, 0, 4);                // <== posizione iniziale
       cameraRig.add(camera);
 
       sceneA = new THREE.Scene();
@@ -112,18 +112,28 @@
       portalCenterMesh.receiveShadow = true;
       sceneA.add(portalCenterMesh);
 
-      textureLoader.load('assets/video/LOGO-2.png', (logoTexture) => {
-        const logoMaterial = new THREE.MeshBasicMaterial({
-          map: logoTexture,
-          transparent: true,
-          opacity: 0
-        });
-        const logoGeometry = new THREE.PlaneGeometry(2, 2);
-        logoMesh = new THREE.Mesh(logoGeometry, logoMaterial);
-        logoMesh.position.set(0, 1.6, 0.5);
-        logoMesh.renderOrder = 1;
-        sceneA.add(logoMesh);
+    textureLoader.load('assets/video/LOGO-3D-GOLD.png', (logoTexture) => {
+      logoTexture.colorSpace = THREE.SRGBColorSpace;
+      logoTexture.minFilter = THREE.LinearFilter;
+      logoTexture.magFilter = THREE.LinearFilter;
+
+      const logoMaterial = new THREE.MeshBasicMaterial({
+        map: logoTexture,
+        transparent: true,
+        opacity: 0, // Inizio completamente trasparente
+        blending: THREE.NormalBlending, // CustomBlending può rompere il fade
+        alphaTest: 0.01,
+        depthWrite: false,
       });
+
+      const logoGeometry = new THREE.PlaneGeometry(2, 2);
+      logoMesh = new THREE.Mesh(logoGeometry, logoMaterial);
+      logoMesh.position.set(0.3, 1.6, 1);
+      logoMesh.renderOrder = 1;
+      sceneA.add(logoMesh);
+    });
+
+
 
       loadDoorModel(sceneA);
 
@@ -150,7 +160,7 @@
         console.log("Entered VR mode");
 
         // mantieni posizione coerente anche in VR
-        cameraRig.position.set(0.3, 0, 1.5);
+        cameraRig.position.set(0.3, 0, 2.5);
 
         setTimeout(() => {
           if (doorMixer) {
