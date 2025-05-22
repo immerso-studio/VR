@@ -420,82 +420,38 @@
       audio.currentTime = progressBar.value;
     });
 
-    function setupDeviceOrientation() {
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS 13+ - richiede permesso
-        const button = document.createElement('button');
-        button.innerText = 'Attiva Giroscopio';
-        button.style.position = 'absolute';
-        button.style.top = '20px';
-        button.style.left = '20px';
-        button.style.zIndex = '2000';
-        button.style.padding = '10px 20px';
-        button.style.fontSize = '16px';
-        button.style.background = 'rgba(0,0,0,0.7)';
-        button.style.color = 'white';
-        button.style.border = 'none';
-        button.style.borderRadius = '5px';
-        document.body.appendChild(button);
-
-        button.addEventListener('click', async () => {
-          try {
-            const response = await DeviceOrientationEvent.requestPermission();
-            if (response === 'granted') {
-              window.addEventListener('deviceorientation', handleOrientation);
-              button.remove();
-            } else {
-              alert('Per un\'esperienza completa, attiva il giroscopio.');
-            }
-          } catch (error) {
-            console.error('Errore richiesta permesso:', error);
-          }
-        });
-      } else if (window.DeviceOrientationEvent) {
-        // Android e altri browser
-        window.addEventListener('deviceorientation', handleOrientation);
-      } else {
-        console.warn('Device Orientation API non supportata');
-      }
-    }
-
-    let isFirstOrientation = true;
-    let initialBeta = null;
-    let initialGamma = null;
-
+    // Gestione del giroscopio
     function handleOrientation(event) {
-      if (event.alpha === null || event.beta === null || event.gamma === null) return;
-
-      // Calibrazione iniziale (solo al primo evento)
-      if (isFirstOrientation) {
-        initialBeta = event.beta;
-        initialGamma = event.gamma;
-        isFirstOrientation = false;
-        return;
-      }
-
-      // Calcola le differenze rispetto alla posizione iniziale
-      const betaDiff = event.beta - initialBeta;
-      const gammaDiff = event.gamma - initialGamma;
-
-      // Applica direttamente le rotazioni (invertite per corrispondere al movimento)
-      // - beta (inclinazione avanti/indietro) controlla la rotazione X (su/giù)
-      // - gamma (inclinazione sinistra/destra) controlla la rotazione Z (per mantenere dritto)
-      // - alpha (rotazione dispositivo) controlla la rotazione Y (sinistra/destra)
-      
-      // Rotazione verticale (su/giù)
-      pitchObject.rotation.x = THREE.MathUtils.degToRad(-betaDiff * 0.9);
-      
-      // Rotazione orizzontale (sinistra/destra)
-      yawObject.rotation.y = THREE.MathUtils.degToRad(-event.alpha);
-      
-      // Piccola correzione per mantenere l'orizzonte dritto
-      pitchObject.rotation.z = THREE.MathUtils.degToRad(gammaDiff * 0.3);
-      
-      // Limita l'inclinazione verticale per evitare posizioni estreme
-      pitchObject.rotation.x = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitchObject.rotation.x));
+        // Normalizza i valori per Three.js
+        const beta = event.beta ? THREE.MathUtils.degToRad(event.beta) : 0;
+        const gamma = event.gamma ? THREE.MathUtils.degToRad(event.gamma) : 0;
+        const alpha = event.alpha ? THREE.MathUtils.degToRad(event.alpha) : 0;
+        
+        // Applica la rotazione all'oggetto
+        cube.rotation.set(beta, alpha, -gamma);
     }
 
-    setupDeviceOrientation();
+    // Richiedi permesso su iOS 13+
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        document.addEventListener('click', function() {
+            DeviceOrientationEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                    }
+                })
+                .catch(console.error);
+        });
+    } else {
+        window.addEventListener('deviceorientation', handleOrientation);
+    }
+
+    // Animazione
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+    }
+    animate();
 
 
 
