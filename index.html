@@ -1,465 +1,371 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Oswald:wght@200..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Montaga&family=Oswald:wght@200..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-
-
-  <title>Punti Interattivi UI</title>
+  <title>VR Portal Room with Video Texture</title>
   <style>
-    body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    body { margin: 0; overflow: hidden; }
     canvas { display: block; }
-
-    #infoCard {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(10px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.4s ease;
-    }
-
-    #infoCard.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    #infoCardContent {
-      background-image: url('assets/schede/papiro3.png');
-      background-repeat: no-repeat;
-      background-size: 100% 100%;
-      background-position: top;
-      background-attachment: local;
-
-      padding: 40px;
-      border-radius: 12px;
-      max-width: 300px;
-      max-height: 70vh;
-      overflow-y: auto;
-      position: relative;
-      color: #000000;
-      transform: scale(0.95);
-      transition: transform 0.4s ease;
-    }
-
-
-
-    #infoCard.show #infoCardContent {
-      transform: scale(1);
-    }
-
-    #infoTitle {
-      margin-top: 0;
-      margin-right: 50px;
-      font-family: 'cinzel', serif;
-      font-weight: bold;
-      line-height: 25px;
-    }
-
-    #infoText {
-
-      font-family: 'Montaga', serif;
-    }
-
-
-    #closeBtn {
-      position: fixed;
-      width: 30px;
-      height: 30px;
-      top: 20px;
-      right: 20px;
-      font-size: 20px;
-      cursor: pointer;
-      background-color: red;
-      border-radius: 10px;
+    #info {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
       color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-family: Arial, sans-serif;
+      pointer-events: none;
     }
-
-    #audioPlayer {
-      display: none;
-      position: relative;
-      margin-top: 10px;
-      padding: 10px 10px;
-      background: rgba(40, 40, 0, 0.2);
-      backdrop-filter: blur(10px);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      animation: fadeIn 0.5s ease;
-    }
-
-    #audioPlayer button {
-      background: #ddd;
-      backdrop-filter: blur(5px);
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    #audioPlayer input[type="range"] {
-      flex-grow: 1;
-      height: 6px;
-      border-radius: 5px;
-      background: #ddd;
-      appearance: none;
-      cursor: pointer;
-    }
-
-    #audioPlayer input[type="range"]::-webkit-slider-thumb {
-      appearance: none;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #333;
-      cursor: pointer;
-    }
-
-
-
-
-
   </style>
   <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/"
-      }
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
     }
+  }
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
 </head>
 <body>
-  <div id="infoCard">
-    <div id="infoCardContent">
-      <span id="closeBtn">&times;</span>
-      <h2 id="infoTitle"></h2>
-      <img id="infoImage" src="" alt="info" style="max-width: 100%; margin-bottom: 15px; border-radius: 8px;" />
-      <div id="audioPlayer">
-        <button id="playPauseBtn">⏵︎</button>
-        <input type="range" id="progressBar" value="0" min="0" step="1" />
-        <audio id="audio" src=""></audio>
-      </div>
-
-      <p id="infoText"></p>
-
-
-    </div>
-  </div>
-
+  <div id="info">Walk through the pink portal to enter the alternate reality<br>Press 'R' to reset</div>
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { VRButton } from 'three/addons/webxr/VRButton.js';
 
-    let scene, camera, renderer;
-    let yawObject, pitchObject;
-    let raycaster = new THREE.Raycaster();
-    let mouse = new THREE.Vector2();
-    let clickableObjects = [];
-
-    let isMouseDown = false;
-    let isTouching = false;
-    let prevMouseX = 0;
-    let prevMouseY = 0;
-    let prevTouchX = 0;
-    let prevTouchY = 0;
-    let mouseMoved = false;
-    const clickThreshold = 5;
+    let camera, cameraRig, renderer;
+    let sceneA, sceneB, activeScene;
+    let portalCenterMesh;
+    let logoMesh;
+    let switched = false;
+    let hasShownFade = false;
+    let doorMixer;
+    let doorSound;
+    let backgroundMusic;
+    let fadePlane;
+    let clock = new THREE.Clock();
 
     init();
     animate();
 
     function init() {
-      scene = new THREE.Scene();
-
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(0, 0, 0);
-
-      pitchObject = new THREE.Object3D();
-      pitchObject.add(camera);
-
-      yawObject = new THREE.Object3D();
-      yawObject.position.y = 1.5;
-      yawObject.add(pitchObject);
-
-      scene.add(yawObject);
-
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.xr.enabled = true;
       document.body.appendChild(renderer.domElement);
+      document.body.appendChild(VRButton.createButton(renderer));
 
-      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-      const light = new THREE.DirectionalLight(0xffffff, 0.8);
-      light.position.set(10, 10, 10);
-      scene.add(light);
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0.3, 1.5, 0);
 
-      const dracoLoader = new DRACOLoader();
-      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-      const loader = new GLTFLoader();
-      loader.setDRACOLoader(dracoLoader);
-      loader.load('assets/Stanza-scansionata-1.glb', (gltf) => {
-        const model = gltf.scene;
-        model.position.set(0, 0, 0);
-        scene.add(model);
+      cameraRig = new THREE.Group();
+      cameraRig.position.set(0, 0, 4);
+      cameraRig.add(camera);
+
+      // 🎬 Fade plane davanti alla camera
+      const fadeGeo = new THREE.PlaneGeometry(2, 2);
+      const fadeMat = new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0,
+        depthTest: false
       });
+      fadePlane = new THREE.Mesh(fadeGeo, fadeMat);
+      fadePlane.position.z = -0.5;
+      camera.add(fadePlane);
 
-      addInteractivePoint(new THREE.Vector3(1.7, 1.7, 0), '#ff0000', 'ROSSO');
-      addInteractivePoint(new THREE.Vector3(-1.7, 0.9, -1), '#00ff00', 'VERDE');
-      addInteractivePoint(new THREE.Vector3(-1.7, 1.2, 1), '#0000ff', 'BLU');
+      sceneA = new THREE.Scene();
+      sceneA.background = new THREE.Color(0x222222);
+      sceneA.add(cameraRig);
+      addLights(sceneA);
+      loadRoom(sceneA);
 
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-
-      // Mouse events
-      window.addEventListener('mousedown', (e) => {
-        isMouseDown = true;
-        mouseMoved = false;
-        prevMouseX = e.clientX;
-        prevMouseY = e.clientY;
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isMouseDown) return;
-        const deltaX = e.clientX - prevMouseX;
-        const deltaY = e.clientY - prevMouseY;
-
-        if (Math.abs(deltaX) > clickThreshold || Math.abs(deltaY) > clickThreshold) {
-          mouseMoved = true;
-        }
-
-        yawObject.rotation.y -= deltaX * 0.002;
-        pitchObject.rotation.x -= deltaY * 0.002;
-        pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchObject.rotation.x));
-
-        prevMouseX = e.clientX;
-        prevMouseY = e.clientY;
-      });
-
-      window.addEventListener('mouseup', (e) => {
-        isMouseDown = false;
-        if (!mouseMoved) {
-          handlePointerSelect(e.clientX, e.clientY);
-        }
-      });
-
-      // Touch events
-      window.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-          isTouching = true;
-          mouseMoved = false;
-          prevTouchX = e.touches[0].clientX;
-          prevTouchY = e.touches[0].clientY;
-        }
-      }, { passive: true });
-
-      window.addEventListener('touchmove', (e) => {
-        if (!isTouching || e.touches.length !== 1) return;
-
-        const touchX = e.touches[0].clientX;
-        const touchY = e.touches[0].clientY;
-        const deltaX = touchX - prevTouchX;
-        const deltaY = touchY - prevTouchY;
-
-        if (Math.abs(deltaX) > clickThreshold || Math.abs(deltaY) > clickThreshold) {
-          mouseMoved = true;
-        }
-
-        yawObject.rotation.y -= deltaX * 0.002;
-        pitchObject.rotation.x -= deltaY * 0.002;
-        pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchObject.rotation.x));
-
-        prevTouchX = touchX;
-        prevTouchY = touchY;
-      }, { passive: true });
-
-      window.addEventListener('touchend', (e) => {
-        isTouching = false;
-        if (!mouseMoved && e.changedTouches.length === 1) {
-          const touch = e.changedTouches[0];
-          handlePointerSelect(touch.clientX, touch.clientY);
-        }
-      }, { passive: true });
-    }
-
-    function createLabelSprite(text, color = '#00FFAA') {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-
-      ctx.beginPath();
-      ctx.arc(128, 128, 20, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 25;
-      ctx.fill();
-
-      const texture = new THREE.CanvasTexture(canvas);
-      const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-      const sprite = new THREE.Sprite(material);
-      sprite.scale.set(1, 1, 1);
-      return sprite;
-    }
-
-    function addInteractivePoint(position, color, name) {
-      const sprite = createLabelSprite(name, color);
-      sprite.position.copy(position);
-      sprite.name = name;
-      scene.add(sprite);
-      clickableObjects.push(sprite);
-    }
-
-    function handlePointerSelect(x, y) {
-      mouse.x = (x / window.innerWidth) * 2 - 1;
-      mouse.y = -(y / window.innerHeight) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(clickableObjects);
-
-      if (intersects.length > 0) {
-        const clickedName = intersects[0].object.name;
-        showInfoCard(clickedName);
-      }
-    }
-
-    function showInfoCard(name) {
-      const infoCard = document.getElementById('infoCard');
-      const title = document.getElementById('infoTitle');
-      const text = document.getElementById('infoText');
-      const image = document.getElementById('infoImage');
-      const audio = document.getElementById('audio');
-      const audioPlayer = document.getElementById('audioPlayer');
-
-      const data = {
-        'ROSSO': {
-          title: 'Gli Affreschi: La Mano di Teodoro Ghisi',
-          text: 'Il pregio maggiore dell\'Oratorio risiede negli affreschi che ne decorano la volta absidale. Le fonti attribuiscono queste pitture a Teodoro Ghisi (circa 1536-1601), un importante artista mantovano formatosi alla scuola di Giulio Romano e attivo presso la corte dei Gonzaga. Questa attribuzione colloca gli affreschi nel pieno manierismo tardo cinquecentesco.',
-          image: 'assets/schede/1.jpg',
-          audio: 'assets/schede/Fairy_Vibes.mp3'
-        },
-        'VERDE': {
-          title: 'Un Balconcino e Drastiche Trasformazioni',
-          text: 'Originariamente, un dettaglio architettonico significativo era un balconcino che, da una stanza adiacente (probabilmente una camera padronale), permetteva ai Signori di assistere alle funzioni religiose in modo riservato. Tuttavia, la storia dell\'Oratorio è segnata da un cambiamento radicale: in epoca successiva, probabilmente all\'inizio del XX secolo, una parte consistente dell\'antica cappella fu trasformata in un locale bagno, adiacente alla "Camera del Re" approntata per Vittorio Emanuele III nel 1909.',
-          image: 'assets/schede/2.png',
-          audio: 'assets/schede/Fairy_Vibes.mp3'
-        },
-        'BLU': {
-          title: 'Iconografia degli Affreschi: Un Mistero da Svelare',
-          text: 'Nonostante l\'attribuzione a Ghisi, i soggetti precisi degli affreschi rimangono in parte oscuri. La denominazione "Oratorio della Natività di Maria" suggerisce che il ciclo potesse illustrare episodi della vita della Vergine. Si ipotizzano scene come la "Trinità che incorona Maria" o l\'"Annunciazione", ma mancano conferme visive o descrizioni dettagliate che ne attestino con certezza l\'iconografia. Lo stile sarebbe tipicamente manierista, con figure dinamiche e complesse, forse influenzato dalle esigenze devozionali della Controriforma.',
-          image: 'assets/schede/3.jpg',
-          audio: 'assets/schede/Fairy_Vibes.mp3'
-        }
-      };
-
-      if (data[name]) {
-        title.innerText = data[name].title;
-        text.innerText = data[name].text;
-        image.src = data[name].image;
-        audio.src = data[name].audio;
-        audioPlayer.style.display = 'flex';
-        infoCard.classList.add('show');
-      }
-    }
-
-    document.getElementById('closeBtn').addEventListener('click', () => {
-      const audio = document.getElementById('audio');
-      const playPauseBtn = document.getElementById('playPauseBtn');
-      const audioPlayer = document.getElementById('audioPlayer');
-
-      audio.pause();
-      audio.currentTime = 0;
-      playPauseBtn.textContent = '⏵︎';
-      audioPlayer.style.display = 'none';
-
-      document.getElementById('infoCard').classList.remove('show');
-    });
-
-
-    const audio = document.getElementById('audio');
-    const playPauseBtn = document.getElementById('playPauseBtn');
-    const progressBar = document.getElementById('progressBar');
-
-    playPauseBtn.addEventListener('click', () => {
-      if (audio.paused) {
-        audio.play();
-        playPauseBtn.textContent = '⏸︎';
-      } else {
-        audio.pause();
-        playPauseBtn.textContent = '⏵︎';
-      }
-    });
-
-    // Aggiorna la barra mentre l'audio avanza
-    audio.addEventListener('timeupdate', () => {
-      if (!isNaN(audio.duration)) {
-        progressBar.max = Math.floor(audio.duration);
-        progressBar.value = Math.floor(audio.currentTime);
-      }
-    });
-
-    // Quando l'utente muove la barra, cambia il tempo dell'audio
-    progressBar.addEventListener('input', () => {
-      audio.currentTime = progressBar.value;
-    });
-
-    // Gestione del giroscopio
-    function handleOrientation(event) {
-        // Normalizza i valori per Three.js
-        const beta = event.beta ? THREE.MathUtils.degToRad(event.beta) : 0;
-        const gamma = event.gamma ? THREE.MathUtils.degToRad(event.gamma) : 0;
-        const alpha = event.alpha ? THREE.MathUtils.degToRad(event.alpha) : 0;
-        
-        // Applica la rotazione all'oggetto
-        cube.rotation.set(beta, alpha, -gamma);
-    }
-
-    // Richiedi permesso su iOS 13+
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        document.addEventListener('click', function() {
-            DeviceOrientationEvent.requestPermission()
-                .then(response => {
-                    if (response === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation);
-                    }
-                })
-                .catch(console.error);
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load('assets/hdris/tile--.jpg', (floorTexture) => {
+        floorTexture.wrapS = THREE.RepeatWrapping;
+        floorTexture.wrapT = THREE.RepeatWrapping;
+        floorTexture.repeat.set(60, 60);
+        const floorMat = new THREE.MeshStandardMaterial({
+          map: floorTexture,
+          roughness: 0.6,
+          metalness: 0.0
         });
-    } else {
-        window.addEventListener('deviceorientation', handleOrientation);
+        const floorGeo = new THREE.PlaneGeometry(200, 200);
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        sceneA.add(floor);
+      });
+
+      const cubeGeo = new THREE.BoxGeometry(1.1, 2.6, 0.01);
+      const video = document.createElement('video');
+      video.src = 'assets/video/portale.mp4';
+      video.crossOrigin = 'anonymous';
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.play();
+
+      const videoTexture = new THREE.VideoTexture(video);
+      videoTexture.minFilter = THREE.LinearFilter;
+      videoTexture.magFilter = THREE.LinearFilter;
+      videoTexture.format = THREE.RGBAFormat;
+      videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+      const cubeMat = new THREE.MeshStandardMaterial({
+        map: videoTexture,
+        side: THREE.DoubleSide,
+        metalness: 0.5,
+        roughness: 0.1
+      });
+
+      portalCenterMesh = new THREE.Mesh(cubeGeo, cubeMat);
+      portalCenterMesh.position.set(0.4, 1.3, -0.05);
+      portalCenterMesh.castShadow = true;
+      portalCenterMesh.receiveShadow = true;
+      sceneA.add(portalCenterMesh);
+
+      textureLoader.load('assets/video/LOGO-3D-GOLD.png', (logoTexture) => {
+        logoTexture.colorSpace = THREE.SRGBColorSpace;
+        logoTexture.minFilter = THREE.LinearFilter;
+        logoTexture.magFilter = THREE.LinearFilter;
+
+        const logoMaterial = new THREE.MeshBasicMaterial({
+          map: logoTexture,
+          transparent: true,
+          opacity: 0,
+          blending: THREE.NormalBlending,
+          alphaTest: 0.01,
+          depthWrite: false,
+        });
+
+        const logoGeometry = new THREE.PlaneGeometry(2, 2);
+        logoMesh = new THREE.Mesh(logoGeometry, logoMaterial);
+        logoMesh.position.set(0.3, 1.6, 1.7);
+        logoMesh.renderOrder = 1;
+        sceneA.add(logoMesh);
+      });
+
+      loadDoorModel(sceneA);
+
+      doorSound = new Audio('assets/video/porta-sound.mp3');
+      doorSound.preload = 'auto';
+      doorSound.volume = 0.8;
+
+      backgroundMusic = new Audio('assets/video/alice-sound.mp3');
+      backgroundMusic.loop = true;
+      backgroundMusic.preload = 'auto';
+      backgroundMusic.volume = 0.5;
+
+      sceneB = new THREE.Scene();
+      sceneB.background = new THREE.Color(0x003366);
+      sceneB.add(cameraRig);
+      addLights(sceneB);
+      loadAltRoom(sceneB);
+
+      activeScene = sceneA;
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'r' || e.key === 'R') {
+          switched = false;
+          activeScene = sceneA;
+          cameraRig.position.set(0, 0, 3);
+          console.log("Scene reset");
+        }
+      });
+
+      window.addEventListener('resize', onWindowResize);
+
+      renderer.xr.addEventListener('sessionstart', () => {
+        console.log("Entered VR mode");
+        cameraRig.position.set(0.3, 0, 2.5);
+
+        if (backgroundMusic) {
+          backgroundMusic.currentTime = 0;
+          backgroundMusic.play().catch(err => console.warn('Background music error:', err));
+        }
+
+        setTimeout(() => {
+          if (doorMixer) {
+            doorMixer.stopAllAction();
+            doorMixer._actions.forEach(action => {
+              action.reset();
+              action.play();
+            });
+            console.log("🚪 Door animation started");
+          }
+        }, 10000);
+
+        setTimeout(() => {
+          if (doorSound) {
+            doorSound.currentTime = 0;
+            doorSound.play().catch(err => console.warn('Audio playback error:', err));
+            console.log("🔊 Door sound played");
+          }
+        }, 13500);
+
+        setTimeout(() => {
+          if (logoMesh) {
+            gsap.to(logoMesh.material, {
+              opacity: 1,
+              duration: 1,
+              ease: 'power2.out'
+            });
+          }
+        }, 2000);
+      });
+
+      renderer.xr.addEventListener('sessionend', () => {
+        if (backgroundMusic) {
+          backgroundMusic.pause();
+          backgroundMusic.currentTime = 0;
+        }
+      });
     }
 
-    // Animazione
-    function animate() {
-        requestAnimationFrame(animate);
-        renderer.render(scene, camera);
+    function addLights(scene) {
+      const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+      hemi.position.set(0, 1, 0);
+      scene.add(hemi);
     }
-    animate();
 
+    function loadRoom(scene) {
+      const loader = new GLTFLoader();
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      loader.setDRACOLoader(dracoLoader);
 
+      loader.load('assets/alice/Stanza-scansionata-3.glb', function (gltf) {
+        gltf.scene.scale.set(1.3, 1.3, 1.3);
+        gltf.scene.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        scene.add(gltf.scene);
+      }, undefined, function (error) {
+        console.error('Error loading GLB (Scene A):', error);
+      });
+    }
 
+    function loadAltRoom(scene) {
+      const loader = new GLTFLoader();
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      loader.setDRACOLoader(dracoLoader);
 
+      loader.load('assets/Stanza-prova-3.glb', function (gltf) {
+        gltf.scene.scale.set(2, 2, 2);
+        gltf.scene.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        scene.add(gltf.scene);
+      }, undefined, function (error) {
+        console.error('Error loading GLB (Scene B):', error);
+      });
+    }
+
+    function loadDoorModel(scene) {
+      const loader = new GLTFLoader();
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      loader.setDRACOLoader(dracoLoader);
+
+      loader.load('assets/alice/Porta-animata-2.glb', function (gltf) {
+        gltf.scene.scale.set(1.3, 1.3, 1.3);
+        const door = gltf.scene;
+        door.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+          if (child.isLight) child.visible = false;
+        });
+        scene.add(door);
+
+        doorMixer = new THREE.AnimationMixer(door);
+        gltf.animations.forEach((clip) => {
+          const action = doorMixer.clipAction(clip);
+          action.clampWhenFinished = true;
+          action.loop = THREE.LoopOnce;
+        });
+      }, undefined, function (error) {
+        console.error('Error loading door model:', error);
+      });
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
 
     function animate() {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
+      renderer.setAnimationLoop(() => {
+        const delta = clock.getDelta();
+        if (doorMixer) doorMixer.update(delta);
+        checkPortalEntry();
+        updatePortalEffect();
+        renderer.render(activeScene, camera);
+      });
+    }
+
+    function checkPortalEntry() {
+      if (switched) return;
+
+      const camPos = new THREE.Vector3();
+      camera.getWorldPosition(camPos);
+      const portalBox = new THREE.Box3().setFromObject(portalCenterMesh);
+      portalBox.expandByScalar(0.2);
+
+      if (portalBox.containsPoint(camPos)) {
+        console.log("✅ PORTAL ENTERED");
+        switched = true;
+
+        if (!hasShownFade) {
+          hasShownFade = true;
+
+          fadePlane.material.opacity = 0;
+          gsap.to(fadePlane.material, {
+            opacity: 1,
+            duration: 0.5,
+            ease: "power2.in",
+            onComplete: () => {
+              activeScene = sceneB;
+              setTimeout(() => {
+                gsap.to(fadePlane.material, {
+                  opacity: 0,
+                  duration: 1,
+                  ease: "power2.out"
+                });
+              }, 1000);
+            }
+          });
+        } else {
+          activeScene = sceneB;
+        }
+
+        setTimeout(() => { switched = false; }, 2000);
+      }
+    }
+
+    function updatePortalEffect() {
+      if (switched || !portalCenterMesh) return;
+      const camPos = new THREE.Vector3();
+      camera.getWorldPosition(camPos);
+      const portalPos = new THREE.Vector3();
+      portalCenterMesh.getWorldPosition(portalPos);
+      const distance = camPos.distanceTo(portalPos);
+      const maxDistance = 2.0;
+      const intensity = Math.max(0, (maxDistance - distance) / maxDistance);
+      portalCenterMesh.material.emissiveIntensity = intensity * 2;
     }
   </script>
 </body>
