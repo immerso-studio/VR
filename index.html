@@ -282,30 +282,6 @@
           if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
-
-            // Applica il materiale vetro ai bicchieri e barattolo
-            if (child.name === "Bicchiere 1" || child.name === "Bicchiere 2" || child.name === "Barattolo") {
-              child.material = new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
-                metalness: 0,
-                roughness: 0,
-                transmission: 1.0,  // Trasparenza reale
-                thickness: 0.2,     // Spessore vetro
-                ior: 1.5,           // Indice di rifrazione
-                clearcoat: 1.0,
-                clearcoatRoughness: 0,
-                reflectivity: 0.5,
-                specularIntensity: 1,
-                specularColor: new THREE.Color(1, 1, 1),
-                attenuationDistance: 1.0,
-                attenuationColor: new THREE.Color(1, 1, 1),
-                transparent: true,
-                opacity: 1.0,
-                side: THREE.DoubleSide,
-                envMapIntensity: 1.0
-              });
-              child.material.needsUpdate = true;
-            }
           }
         });
         scene.add(gltf.scene);
@@ -313,7 +289,6 @@
         console.error('Error loading GLB (Scene B):', error);
       });
     }
-
 
     function loadDoorModel(scene) {
       const loader = new GLTFLoader();
