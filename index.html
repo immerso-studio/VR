@@ -39,12 +39,11 @@
     let portalCenterMesh;
     let logoMesh;
     let switched = false;
-    let hasShownFade = false;
     let doorMixer;
     let doorSound;
     let backgroundMusic;
-    let fadePlane;
     let clock = new THREE.Clock();
+    let contextSphere; // 🌌 Aggiunto
 
     init();
     animate();
@@ -64,18 +63,6 @@
       cameraRig = new THREE.Group();
       cameraRig.position.set(0, 0, 4);
       cameraRig.add(camera);
-
-      // 🎬 Fade plane davanti alla camera
-      const fadeGeo = new THREE.PlaneGeometry(2, 2);
-      const fadeMat = new THREE.MeshBasicMaterial({
-        color: 0x000000,
-        transparent: true,
-        opacity: 0,
-        depthTest: false
-      });
-      fadePlane = new THREE.Mesh(fadeGeo, fadeMat);
-      fadePlane.position.z = -0.5;
-      camera.add(fadePlane);
 
       sceneA = new THREE.Scene();
       sceneA.background = new THREE.Color(0x222222);
@@ -166,6 +153,19 @@
       addLights(sceneB);
       loadAltRoom(sceneB);
 
+      // 🌌 Carica la texture sferica context.jpg
+      textureLoader.load('assets/context.jpeg', (texture) => {
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const sphereGeo = new THREE.SphereGeometry(50, 100, 40);
+        sphereGeo.scale(1, 1, 1);
+        const sphereMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
+        contextSphere = new THREE.Mesh(sphereGeo, sphereMat);
+        contextSphere.visible = false; // inizialmente invisibile
+        sceneB.add(contextSphere);
+      });
+
       activeScene = sceneA;
 
       window.addEventListener('keydown', (e) => {
@@ -173,6 +173,7 @@
           switched = false;
           activeScene = sceneA;
           cameraRig.position.set(0, 0, 3);
+          if (contextSphere) contextSphere.visible = false; // resetta sfera
           console.log("Scene reset");
         }
       });
@@ -258,7 +259,7 @@
       dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
       loader.setDRACOLoader(dracoLoader);
 
-      loader.load('assets/Stanza-prova-3.glb', function (gltf) {
+      loader.load('assets/alice/Prova-teaparty-2.glb', function (gltf) {
         gltf.scene.scale.set(2, 2, 2);
         gltf.scene.traverse((child) => {
           if (child.isMesh) {
@@ -285,6 +286,7 @@
           if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
+            if (child.material) child.material.needsUpdate = true;
           }
           if (child.isLight) child.visible = false;
         });
@@ -311,6 +313,7 @@
       renderer.setAnimationLoop(() => {
         const delta = clock.getDelta();
         if (doorMixer) doorMixer.update(delta);
+
         checkPortalEntry();
         updatePortalEffect();
         renderer.render(activeScene, camera);
@@ -319,39 +322,15 @@
 
     function checkPortalEntry() {
       if (switched) return;
-
       const camPos = new THREE.Vector3();
       camera.getWorldPosition(camPos);
       const portalBox = new THREE.Box3().setFromObject(portalCenterMesh);
       portalBox.expandByScalar(0.2);
-
       if (portalBox.containsPoint(camPos)) {
         console.log("✅ PORTAL ENTERED");
         switched = true;
-
-        if (!hasShownFade) {
-          hasShownFade = true;
-
-          fadePlane.material.opacity = 0;
-          gsap.to(fadePlane.material, {
-            opacity: 1,
-            duration: 0.5,
-            ease: "power2.in",
-            onComplete: () => {
-              activeScene = sceneB;
-              setTimeout(() => {
-                gsap.to(fadePlane.material, {
-                  opacity: 0,
-                  duration: 1,
-                  ease: "power2.out"
-                });
-              }, 1000);
-            }
-          });
-        } else {
-          activeScene = sceneB;
-        }
-
+        activeScene = sceneB;
+        if (contextSphere) contextSphere.visible = true; // 🌌 Attiva la sfera
         setTimeout(() => { switched = false; }, 2000);
       }
     }
