@@ -33,6 +33,7 @@
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
     import { VRButton } from 'three/addons/webxr/VRButton.js';
+    import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
     let camera, cameraRig, renderer;
     let sceneA, sceneB, activeScene;
@@ -43,7 +44,7 @@
     let doorSound;
     let backgroundMusic;
     let clock = new THREE.Clock();
-    let contextSphere; // 🌌 Aggiunto
+    let contextSphere;
 
     init();
     animate();
@@ -153,7 +154,23 @@
       addLights(sceneB);
       loadAltRoom(sceneB);
 
-      // 🌌 Carica la texture sferica context.jpg
+      // 🌌 Caricamento HDRI come environment map per i riflessi
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+
+      new RGBELoader()
+        .setPath('assets/hdris/')
+        .load('trees.hdr', function (hdrTexture) {
+          hdrTexture.mapping = THREE.EquirectangularReflectionMapping;
+          hdrTexture.colorSpace = THREE.SRGBColorSpace;
+          const envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
+          sceneB.environment = envMap;
+          hdrTexture.dispose();
+          pmremGenerator.dispose();
+          console.log("🌐 Environment map applied to SceneB");
+        });
+
+      // 🌌 Carica texture sferica context.jpeg
       textureLoader.load('assets/context.jpeg', (texture) => {
         texture.mapping = THREE.EquirectangularReflectionMapping;
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -173,7 +190,7 @@
           switched = false;
           activeScene = sceneA;
           cameraRig.position.set(0, 0, 3);
-          if (contextSphere) contextSphere.visible = false; // resetta sfera
+          if (contextSphere) contextSphere.visible = false;
           console.log("Scene reset");
         }
       });
@@ -259,12 +276,36 @@
       dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
       loader.setDRACOLoader(dracoLoader);
 
-      loader.load('assets/alice/Prova-teaparty-2.glb', function (gltf) {
+      loader.load('assets/alice/Prova-teaparty-3.glb', function (gltf) {
         gltf.scene.scale.set(2, 2, 2);
         gltf.scene.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
+
+            // Applica il materiale vetro ai bicchieri e barattolo
+            if (child.name === "Bicchiere 1" || child.name === "Bicchiere 2" || child.name === "Barattolo") {
+              child.material = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                metalness: 0,
+                roughness: 0,
+                transmission: 1.0,  // Trasparenza reale
+                thickness: 0.2,     // Spessore vetro
+                ior: 1.5,           // Indice di rifrazione
+                clearcoat: 1.0,
+                clearcoatRoughness: 0,
+                reflectivity: 0.5,
+                specularIntensity: 1,
+                specularColor: new THREE.Color(1, 1, 1),
+                attenuationDistance: 1.0,
+                attenuationColor: new THREE.Color(1, 1, 1),
+                transparent: true,
+                opacity: 1.0,
+                side: THREE.DoubleSide,
+                envMapIntensity: 1.0
+              });
+              child.material.needsUpdate = true;
+            }
           }
         });
         scene.add(gltf.scene);
@@ -272,6 +313,7 @@
         console.error('Error loading GLB (Scene B):', error);
       });
     }
+
 
     function loadDoorModel(scene) {
       const loader = new GLTFLoader();
@@ -330,7 +372,7 @@
         console.log("✅ PORTAL ENTERED");
         switched = true;
         activeScene = sceneB;
-        if (contextSphere) contextSphere.visible = true; // 🌌 Attiva la sfera
+        if (contextSphere) contextSphere.visible = true;
         setTimeout(() => { switched = false; }, 2000);
       }
     }
