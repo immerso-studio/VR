@@ -27,7 +27,7 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
 </head>
 <body>
-  <div id="info">Walk through the pink portal to enter the alternate reality<br>Press 'R' or click reset button in VR</div>
+  <div id="info">Walk through the pink portal to enter the alternate reality<br>Press 'R' to reset</div>
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -45,7 +45,7 @@
     let backgroundMusic;
     let clock = new THREE.Clock();
     let contextSphere;
-    let resetButton, raycaster, tempMatrix, interactiveObjects = [];
+    let blackFadePlane, blackFadeMaterial;
 
     init();
     animate();
@@ -157,7 +157,6 @@
 
       const pmremGenerator = new THREE.PMREMGenerator(renderer);
       pmremGenerator.compileEquirectangularShader();
-
       new RGBELoader()
         .setPath('assets/hdris/')
         .load('trees.hdr', function (hdrTexture) {
@@ -172,7 +171,6 @@
       textureLoader.load('assets/context.jpeg', (texture) => {
         texture.mapping = THREE.EquirectangularReflectionMapping;
         texture.colorSpace = THREE.SRGBColorSpace;
-
         const sphereGeo = new THREE.SphereGeometry(50, 100, 40);
         const sphereMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
         contextSphere = new THREE.Mesh(sphereGeo, sphereMat);
@@ -180,42 +178,57 @@
         sceneB.add(contextSphere);
       });
 
+      // 🌌 Creazione del piano nero per la transizione
+      blackFadeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0 });
+      const blackFadeGeometry = new THREE.PlaneGeometry(10, 10);
+      blackFadePlane = new THREE.Mesh(blackFadeGeometry, blackFadeMaterial);
+      blackFadePlane.position.set(0, 0, -1);
+      camera.add(blackFadePlane);
+
       activeScene = sceneA;
 
       window.addEventListener('keydown', (e) => {
-        if (e.key === 'r' || e.key === 'R') resetScene();
+        if (e.key === 'r' || e.key === 'R') {
+          switched = false;
+          activeScene = sceneA;
+          cameraRig.position.set(0, 0, 3);
+          if (contextSphere) contextSphere.visible = false;
+          gsap.to(blackFadeMaterial, { opacity: 0, duration: 1 }); // Reset transizione
+        }
       });
 
       window.addEventListener('resize', onWindowResize);
 
-      // VR Controllers + Raycaster
-      const controller1 = renderer.xr.getController(0);
-      const controller2 = renderer.xr.getController(1);
-      sceneA.add(controller1);
-      sceneA.add(controller2);
-      controller1.addEventListener('selectstart', onSelectStart);
-      controller2.addEventListener('selectstart', onSelectStart);
-      raycaster = new THREE.Raycaster();
-      tempMatrix = new THREE.Matrix4();
-
-      // Reset button 3D
-      const buttonGeo = new THREE.PlaneGeometry(0.4, 0.2);
-      const buttonMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
-      resetButton = new THREE.Mesh(buttonGeo, buttonMat);
-      resetButton.position.set(0, 1.5, -1.5);
-      sceneA.add(resetButton);
-      interactiveObjects.push(resetButton);
-
       renderer.xr.addEventListener('sessionstart', () => {
         cameraRig.position.set(0.3, 0, 2.5);
-        backgroundMusic?.play().catch(err => console.warn(err));
-        setTimeout(() => { doorMixer?.stopAllAction(); doorMixer?._actions.forEach(a => { a.reset(); a.play(); }); }, 10000);
-        setTimeout(() => { doorSound?.play().catch(err => console.warn(err)); }, 13500);
-        setTimeout(() => { gsap.to(logoMesh.material, { opacity: 1, duration: 1 }); }, 2000);
+        if (backgroundMusic) {
+          backgroundMusic.currentTime = 0;
+          backgroundMusic.play().catch(err => console.warn('Background music error:', err));
+        }
+        setTimeout(() => {
+          if (doorMixer) {
+            doorMixer.stopAllAction();
+            doorMixer._actions.forEach(action => { action.reset(); action.play(); });
+          }
+        }, 10000);
+        setTimeout(() => {
+          if (doorSound) {
+            doorSound.currentTime = 0;
+            doorSound.play().catch(err => console.warn('Audio playback error:', err));
+          }
+        }, 13500);
+        setTimeout(() => {
+          if (logoMesh) {
+            gsap.to(logoMesh.material, { opacity: 1, duration: 1, ease: 'power2.out' });
+          }
+        }, 2000);
       });
 
       renderer.xr.addEventListener('sessionend', () => {
-        backgroundMusic?.pause(); backgroundMusic.currentTime = 0;
+        if (backgroundMusic) {
+          backgroundMusic.pause();
+          backgroundMusic.currentTime = 0;
+        }
       });
     }
 
@@ -227,38 +240,45 @@
 
     function loadRoom(scene) {
       const loader = new GLTFLoader();
-      const dracoLoader = new DRACOLoader().setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
       loader.setDRACOLoader(dracoLoader);
       loader.load('assets/alice/Stanza-scansionata-3.glb', gltf => {
-        gltf.scene.scale.set(1.3,1.3,1.3);
-        gltf.scene.traverse(child => { if (child.isMesh) { child.castShadow=true; child.receiveShadow=true; } });
+        gltf.scene.scale.set(1.3, 1.3, 1.3);
+        gltf.scene.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
         scene.add(gltf.scene);
-      }, undefined, err => console.error(err));
+      });
     }
 
     function loadAltRoom(scene) {
       const loader = new GLTFLoader();
-      const dracoLoader = new DRACOLoader().setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
       loader.setDRACOLoader(dracoLoader);
       loader.load('assets/alice/Prova-teaparty-5.glb', gltf => {
-        gltf.scene.scale.set(2,2,2);
-        gltf.scene.traverse(child => { if (child.isMesh) { child.castShadow=true; child.receiveShadow=true; } });
+        gltf.scene.scale.set(2, 2, 2);
+        gltf.scene.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
         scene.add(gltf.scene);
-      }, undefined, err => console.error(err));
+      });
     }
 
     function loadDoorModel(scene) {
       const loader = new GLTFLoader();
-      const dracoLoader = new DRACOLoader().setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
       loader.setDRACOLoader(dracoLoader);
       loader.load('assets/alice/Porta-animata-2.glb', gltf => {
-        gltf.scene.scale.set(1.3,1.3,1.3);
+        gltf.scene.scale.set(1.3, 1.3, 1.3);
         const door = gltf.scene;
-        door.traverse(child => { if (child.isMesh) { child.castShadow=true; child.receiveShadow=true; child.material.needsUpdate=true; } if (child.isLight) child.visible=false; });
+        door.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
         scene.add(door);
         doorMixer = new THREE.AnimationMixer(door);
-        gltf.animations.forEach(clip => { const a = doorMixer.clipAction(clip); a.clampWhenFinished=true; a.loop=THREE.LoopOnce; });
-      }, undefined, err => console.error(err));
+        gltf.animations.forEach(clip => {
+          const action = doorMixer.clipAction(clip);
+          action.clampWhenFinished = true;
+          action.loop = THREE.LoopOnce;
+        });
+      });
     }
 
     function onWindowResize() {
@@ -270,7 +290,7 @@
     function animate() {
       renderer.setAnimationLoop(() => {
         const delta = clock.getDelta();
-        doorMixer?.update(delta);
+        if (doorMixer) doorMixer.update(delta);
         checkPortalEntry();
         updatePortalEffect();
         renderer.render(activeScene, camera);
@@ -282,13 +302,25 @@
       const camPos = new THREE.Vector3();
       camera.getWorldPosition(camPos);
       const portalBox = new THREE.Box3().setFromObject(portalCenterMesh).expandByScalar(0.2);
+
       if (portalBox.containsPoint(camPos)) {
-        switched = true;
-        activeScene = sceneB;
-        contextSphere && (contextSphere.visible = true);
-        setTimeout(() => { switched = false; }, 2000);
+        switched = true;  // Blocca ulteriori attivazioni
+        console.log("✅ PORTAL ENTERED");
+
+        // 1️⃣ - Mostra subito il nero completo
+        blackFadeMaterial.opacity = 5; 
+
+        // 2️⃣ - Dopo un breve delay (per assicurarsi che l'opacità sia applicata), cambia scena e sfuma il nero
+        setTimeout(() => {
+          activeScene = sceneB;
+          if (contextSphere) contextSphere.visible = true;
+
+          // Sfuma il nero per 2 secondi
+          gsap.to(blackFadeMaterial, { opacity: 0, duration: 5 });
+        }, 100);  // Delay di 100ms per garantire il cambio opacità prima di cambiare scena
       }
     }
+
 
     function updatePortalEffect() {
       if (switched || !portalCenterMesh) return;
@@ -300,28 +332,6 @@
       const maxDistance = 2.0;
       const intensity = Math.max(0, (maxDistance - distance) / maxDistance);
       portalCenterMesh.material.emissiveIntensity = intensity * 2;
-    }
-
-    function onSelectStart(event) {
-      const controller = event.target;
-      tempMatrix.identity().extractRotation(controller.matrixWorld);
-      raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
-      raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
-      const intersects = raycaster.intersectObjects(interactiveObjects, false);
-      if (intersects.length > 0 && intersects[0].object === resetButton) {
-        resetScene();
-      }
-    }
-
-    function resetScene() {
-      switched = false;
-      activeScene = sceneA;
-      cameraRig.position.set(0, 0, 3);
-      contextSphere && (contextSphere.visible = false);
-      backgroundMusic?.pause(); backgroundMusic.currentTime = 0;
-      doorMixer?.stopAllAction(); doorMixer?._actions.forEach(a => a.reset());
-      logoMesh && (logoMesh.material.opacity = 0);
-      console.log("🎬 Scene fully reset!");
     }
   </script>
 </body>
