@@ -144,7 +144,7 @@
       doorSound.preload = 'auto';
       doorSound.volume = 0.8;
 
-      backgroundMusic = new Audio('assets/video/alice-sound.mp3');
+      backgroundMusic = new Audio('assets/alice/musica.mp3');
       backgroundMusic.loop = true;
       backgroundMusic.preload = 'auto';
       backgroundMusic.volume = 0.5;
@@ -210,18 +210,18 @@
             doorMixer.stopAllAction();
             doorMixer._actions.forEach(action => { action.reset(); action.play(); });
           }
-        }, 10000);
+        }, 45000);
         setTimeout(() => {
           if (doorSound) {
             doorSound.currentTime = 0;
             doorSound.play().catch(err => console.warn('Audio playback error:', err));
           }
-        }, 13500);
+        }, 48500);
         setTimeout(() => {
           if (logoMesh) {
             gsap.to(logoMesh.material, { opacity: 1, duration: 1, ease: 'power2.out' });
           }
-        }, 2000);
+        }, 30000);
       });
 
       renderer.xr.addEventListener('sessionend', () => {
