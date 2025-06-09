@@ -200,7 +200,7 @@
       window.addEventListener('resize', onWindowResize);
 
       renderer.xr.addEventListener('sessionstart', () => {
-        cameraRig.position.set(0.3, 0, 2.5);
+        cameraRig.position.set(0.3, 0.3, 2.5);
         if (backgroundMusic) {
           backgroundMusic.currentTime = 0;
           backgroundMusic.play().catch(err => console.warn('Background music error:', err));
