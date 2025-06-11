@@ -42,10 +42,13 @@
     let switched = false;
     let doorMixer;
     let doorSound;
+    let doorSoundPlayed = false;
     let backgroundMusic;
     let clock = new THREE.Clock();
     let contextSphere;
     let blackFadePlane, blackFadeMaterial;
+    let logoShown = false;
+    let doorOpened = false;
 
     init();
     animate();
@@ -143,6 +146,7 @@
       doorSound = new Audio('assets/video/porta-sound.mp3');
       doorSound.preload = 'auto';
       doorSound.volume = 0.8;
+      doorSound.loop = false;
 
       backgroundMusic = new Audio('assets/alice/musica.mp3');
       backgroundMusic.loop = true;
@@ -178,7 +182,6 @@
         sceneB.add(contextSphere);
       });
 
-      // 🌌 Creazione del piano nero per la transizione
       blackFadeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0 });
       const blackFadeGeometry = new THREE.PlaneGeometry(10, 10);
       blackFadePlane = new THREE.Mesh(blackFadeGeometry, blackFadeMaterial);
@@ -193,35 +196,26 @@
           activeScene = sceneA;
           cameraRig.position.set(0, 0, 3);
           if (contextSphere) contextSphere.visible = false;
-          gsap.to(blackFadeMaterial, { opacity: 0, duration: 1 }); // Reset transizione
+          gsap.to(blackFadeMaterial, { opacity: 0, duration: 1 });
+          clock.start();
+          logoShown = false;
+          doorOpened = false;
+          doorSoundPlayed = false;
         }
       });
 
       window.addEventListener('resize', onWindowResize);
 
       renderer.xr.addEventListener('sessionstart', () => {
+        clock.start();
+        logoShown = false;
+        doorOpened = false;
+        doorSoundPlayed = false;
         cameraRig.position.set(0.3, 0.3, 2.5);
         if (backgroundMusic) {
           backgroundMusic.currentTime = 0;
           backgroundMusic.play().catch(err => console.warn('Background music error:', err));
         }
-        setTimeout(() => {
-          if (doorMixer) {
-            doorMixer.stopAllAction();
-            doorMixer._actions.forEach(action => { action.reset(); action.play(); });
-          }
-        }, 45000);
-        setTimeout(() => {
-          if (doorSound) {
-            doorSound.currentTime = 0;
-            doorSound.play().catch(err => console.warn('Audio playback error:', err));
-          }
-        }, 48500);
-        setTimeout(() => {
-          if (logoMesh) {
-            gsap.to(logoMesh.material, { opacity: 1, duration: 1, ease: 'power2.out' });
-          }
-        }, 30000);
       });
 
       renderer.xr.addEventListener('sessionend', () => {
@@ -230,6 +224,70 @@
           backgroundMusic.currentTime = 0;
         }
       });
+    }
+
+    function animate() {
+      renderer.setAnimationLoop(() => {
+        const delta = clock.getDelta();
+        const elapsed = clock.getElapsedTime();
+
+        if (doorMixer) doorMixer.update(delta);
+
+        if (elapsed >= 30 && logoMesh && logoMesh.material.opacity === 0 && !logoShown) {
+          logoShown = true;
+          gsap.to(logoMesh.material, { opacity: 1, duration: 1, ease: 'power2.out' });
+        }
+
+        if (elapsed >= 45 && !doorOpened) {
+          doorOpened = true;
+          if (doorMixer) {
+            doorMixer.stopAllAction();
+            doorMixer._actions.forEach(action => {
+              action.reset();
+              action.play();
+            });
+          }
+        }
+
+        if (elapsed >= 48.5 && doorSound && !doorSoundPlayed) {
+          doorSoundPlayed = true;
+          doorSound.currentTime = 0;
+          doorSound.play().catch(err => console.warn('Audio playback error:', err));
+        }
+
+        checkPortalEntry();
+        updatePortalEffect();
+        renderer.render(activeScene, camera);
+      });
+    }
+
+    function checkPortalEntry() {
+      if (switched) return;
+      const camPos = new THREE.Vector3();
+      camera.getWorldPosition(camPos);
+      const portalBox = new THREE.Box3().setFromObject(portalCenterMesh).expandByScalar(0.2);
+
+      if (portalBox.containsPoint(camPos)) {
+        switched = true;
+        blackFadeMaterial.opacity = 5;
+        setTimeout(() => {
+          activeScene = sceneB;
+          if (contextSphere) contextSphere.visible = true;
+          gsap.to(blackFadeMaterial, { opacity: 0, duration: 5 });
+        }, 100);
+      }
+    }
+
+    function updatePortalEffect() {
+      if (switched || !portalCenterMesh) return;
+      const camPos = new THREE.Vector3();
+      camera.getWorldPosition(camPos);
+      const portalPos = new THREE.Vector3();
+      portalCenterMesh.getWorldPosition(portalPos);
+      const distance = camPos.distanceTo(portalPos);
+      const maxDistance = 2.0;
+      const intensity = Math.max(0, (maxDistance - distance) / maxDistance);
+      portalCenterMesh.material.emissiveIntensity = intensity * 2;
     }
 
     function addLights(scene) {
@@ -285,53 +343,6 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    function animate() {
-      renderer.setAnimationLoop(() => {
-        const delta = clock.getDelta();
-        if (doorMixer) doorMixer.update(delta);
-        checkPortalEntry();
-        updatePortalEffect();
-        renderer.render(activeScene, camera);
-      });
-    }
-
-    function checkPortalEntry() {
-      if (switched) return;
-      const camPos = new THREE.Vector3();
-      camera.getWorldPosition(camPos);
-      const portalBox = new THREE.Box3().setFromObject(portalCenterMesh).expandByScalar(0.2);
-
-      if (portalBox.containsPoint(camPos)) {
-        switched = true;  // Blocca ulteriori attivazioni
-        console.log("✅ PORTAL ENTERED");
-
-        // 1️⃣ - Mostra subito il nero completo
-        blackFadeMaterial.opacity = 5; 
-
-        // 2️⃣ - Dopo un breve delay (per assicurarsi che l'opacità sia applicata), cambia scena e sfuma il nero
-        setTimeout(() => {
-          activeScene = sceneB;
-          if (contextSphere) contextSphere.visible = true;
-
-          // Sfuma il nero per 2 secondi
-          gsap.to(blackFadeMaterial, { opacity: 0, duration: 5 });
-        }, 100);  // Delay di 100ms per garantire il cambio opacità prima di cambiare scena
-      }
-    }
-
-
-    function updatePortalEffect() {
-      if (switched || !portalCenterMesh) return;
-      const camPos = new THREE.Vector3();
-      camera.getWorldPosition(camPos);
-      const portalPos = new THREE.Vector3();
-      portalCenterMesh.getWorldPosition(portalPos);
-      const distance = camPos.distanceTo(portalPos);
-      const maxDistance = 2.0;
-      const intensity = Math.max(0, (maxDistance - distance) / maxDistance);
-      portalCenterMesh.material.emissiveIntensity = intensity * 2;
     }
   </script>
 </body>
