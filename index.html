@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-  <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#000000">
-
-
   <meta charset="UTF-8" />
   <title>VR Portal Room with Video Texture</title>
   <style>
@@ -339,14 +334,5 @@
       portalCenterMesh.material.emissiveIntensity = intensity * 2;
     }
   </script>
-
-  <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(reg => console.log('✅ Service Worker registered', reg))
-      .catch(err => console.warn('❌ Service Worker error', err));
-  }
-</script>
-
 </body>
 </html>
