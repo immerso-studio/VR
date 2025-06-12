@@ -24,7 +24,6 @@
     }
   }
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
 </head>
 <body>
   <div id="info">Walk through the pink portal to enter the alternate reality<br>Press 'R' to reset</div>
@@ -50,6 +49,7 @@
     let logoShown = false;
     let doorOpened = false;
     let startTime = null;
+    let portalSwitchTriggered = false;
 
     init();
     animate();
@@ -194,10 +194,11 @@
       window.addEventListener('keydown', (e) => {
         if (e.key === 'r' || e.key === 'R') {
           switched = false;
+          portalSwitchTriggered = false;
           activeScene = sceneA;
           cameraRig.position.set(0, 0, 3);
           if (contextSphere) contextSphere.visible = false;
-          gsap.to(blackFadeMaterial, { opacity: 0, duration: 1 });
+          blackFadeMaterial.opacity = 0;
           clock.start();
           startTime = null;
           logoShown = false;
@@ -214,6 +215,8 @@
         logoShown = false;
         doorOpened = false;
         doorSoundPlayed = false;
+        portalSwitchTriggered = false;
+        blackFadeMaterial.opacity = 0;
         cameraRig.position.set(0.3, 0.3, 2.5);
         if (backgroundMusic) {
           backgroundMusic.currentTime = 0;
@@ -239,9 +242,12 @@
 
         if (doorMixer) doorMixer.update(delta);
 
-        if (relativeTime >= 30 && logoMesh && logoMesh.material.opacity === 0 && !logoShown) {
+        if (relativeTime >= 30 && logoMesh && !logoShown) {
           logoShown = true;
-          gsap.to(logoMesh.material, { opacity: 1, duration: 1, ease: 'power2.out' });
+        }
+
+        if (logoShown && logoMesh && logoMesh.material.opacity < 1) {
+          logoMesh.material.opacity = Math.min(1, logoMesh.material.opacity + delta);
         }
 
         if (relativeTime >= 45 && !doorOpened) {
@@ -262,25 +268,31 @@
         }
 
         checkPortalEntry();
+
+        if (portalSwitchTriggered && !switched) {
+          switched = true;
+          activeScene = sceneB;
+          if (contextSphere) contextSphere.visible = true;
+        }
+
+        if (blackFadeMaterial.opacity > 0) {
+          blackFadeMaterial.opacity = Math.max(0, blackFadeMaterial.opacity - delta / 5);
+        }
+
         updatePortalEffect();
         renderer.render(activeScene, camera);
       });
     }
 
     function checkPortalEntry() {
-      if (switched) return;
+      if (switched || portalSwitchTriggered) return;
       const camPos = new THREE.Vector3();
       camera.getWorldPosition(camPos);
       const portalBox = new THREE.Box3().setFromObject(portalCenterMesh).expandByScalar(0.2);
 
       if (portalBox.containsPoint(camPos)) {
-        switched = true;
-        blackFadeMaterial.opacity = 5;
-        setTimeout(() => {
-          activeScene = sceneB;
-          if (contextSphere) contextSphere.visible = true;
-          gsap.to(blackFadeMaterial, { opacity: 0, duration: 5 });
-        }, 100);
+        portalSwitchTriggered = true;
+        blackFadeMaterial.opacity = 1;
       }
     }
 
