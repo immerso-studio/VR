@@ -49,6 +49,7 @@
     let blackFadePlane, blackFadeMaterial;
     let logoShown = false;
     let doorOpened = false;
+    let startTime = null;
 
     init();
     animate();
@@ -198,6 +199,7 @@
           if (contextSphere) contextSphere.visible = false;
           gsap.to(blackFadeMaterial, { opacity: 0, duration: 1 });
           clock.start();
+          startTime = null;
           logoShown = false;
           doorOpened = false;
           doorSoundPlayed = false;
@@ -208,6 +210,7 @@
 
       renderer.xr.addEventListener('sessionstart', () => {
         clock.start();
+        startTime = null;
         logoShown = false;
         doorOpened = false;
         doorSoundPlayed = false;
@@ -231,14 +234,17 @@
         const delta = clock.getDelta();
         const elapsed = clock.getElapsedTime();
 
+        if (startTime === null) startTime = elapsed;
+        const relativeTime = elapsed - startTime;
+
         if (doorMixer) doorMixer.update(delta);
 
-        if (elapsed >= 30 && logoMesh && logoMesh.material.opacity === 0 && !logoShown) {
+        if (relativeTime >= 30 && logoMesh && logoMesh.material.opacity === 0 && !logoShown) {
           logoShown = true;
           gsap.to(logoMesh.material, { opacity: 1, duration: 1, ease: 'power2.out' });
         }
 
-        if (elapsed >= 45 && !doorOpened) {
+        if (relativeTime >= 45 && !doorOpened) {
           doorOpened = true;
           if (doorMixer) {
             doorMixer.stopAllAction();
@@ -249,7 +255,7 @@
           }
         }
 
-        if (elapsed >= 48.5 && doorSound && !doorSoundPlayed) {
+        if (relativeTime >= 48.5 && doorSound && !doorSoundPlayed) {
           doorSoundPlayed = true;
           doorSound.currentTime = 0;
           doorSound.play().catch(err => console.warn('Audio playback error:', err));
@@ -320,7 +326,6 @@
       });
     }
 
-    
     function loadDoorModel(scene) {
       const loader = new GLTFLoader();
       const dracoLoader = new DRACOLoader();
