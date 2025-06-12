@@ -278,9 +278,7 @@
           if (timeSinceSwitch >= 0 && timeSinceSwitch < 3) {
             blackFadeMaterial.opacity = 1;
           } else if (timeSinceSwitch >= 3 && timeSinceSwitch <= 8) {
-            const fadeProgress = (timeSinceSwitch - 10) / 10;
-            const eased = 1 - Math.pow(1 - fadeProgress, 2); // easeOutQuad
-            blackFadeMaterial.opacity = 1 - eased;
+            blackFadeMaterial.opacity = 1 - ((timeSinceSwitch - 5) / 12);
           } else if (timeSinceSwitch > 8) {
             blackFadeMaterial.opacity = 0;
           }
