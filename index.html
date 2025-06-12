@@ -50,6 +50,7 @@
     let doorOpened = false;
     let startTime = null;
     let portalSwitchTriggered = false;
+    let portalSwitchTime = null;
 
     init();
     animate();
@@ -204,6 +205,7 @@
           logoShown = false;
           doorOpened = false;
           doorSoundPlayed = false;
+          portalSwitchTime = null;
         }
       });
 
@@ -216,6 +218,7 @@
         doorOpened = false;
         doorSoundPlayed = false;
         portalSwitchTriggered = false;
+        portalSwitchTime = null;
         blackFadeMaterial.opacity = 0;
         cameraRig.position.set(0.3, 0.3, 2.5);
         if (backgroundMusic) {
@@ -267,16 +270,18 @@
           doorSound.play().catch(err => console.warn('Audio playback error:', err));
         }
 
-        checkPortalEntry();
+        checkPortalEntry(elapsed);
 
-        if (portalSwitchTriggered && !switched) {
-          switched = true;
-          activeScene = sceneB;
-          if (contextSphere) contextSphere.visible = true;
-        }
+        if (portalSwitchTriggered && portalSwitchTime !== null) {
+          const timeSinceSwitch = elapsed - portalSwitchTime;
 
-        if (blackFadeMaterial.opacity > 0) {
-          blackFadeMaterial.opacity = Math.max(0, blackFadeMaterial.opacity - delta / 5);
+          if (timeSinceSwitch >= 0 && timeSinceSwitch < 3) {
+            blackFadeMaterial.opacity = 1;
+          } else if (timeSinceSwitch >= 3 && timeSinceSwitch <= 8) {
+            blackFadeMaterial.opacity = 1 - ((timeSinceSwitch - 3) / 5);
+          } else if (timeSinceSwitch > 8) {
+            blackFadeMaterial.opacity = 0;
+          }
         }
 
         updatePortalEffect();
@@ -284,7 +289,7 @@
       });
     }
 
-    function checkPortalEntry() {
+    function checkPortalEntry(currentTime) {
       if (switched || portalSwitchTriggered) return;
       const camPos = new THREE.Vector3();
       camera.getWorldPosition(camPos);
@@ -292,7 +297,9 @@
 
       if (portalBox.containsPoint(camPos)) {
         portalSwitchTriggered = true;
-        blackFadeMaterial.opacity = 1;
+        portalSwitchTime = currentTime;
+        activeScene = sceneB;
+        if (contextSphere) contextSphere.visible = true;
       }
     }
 
