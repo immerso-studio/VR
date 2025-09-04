@@ -88,7 +88,7 @@
       backdrop-filter: blur(12px) saturate(180%); /* effetto vetro smerigliato */
       -webkit-backdrop-filter: blur(12px) saturate(180%); /* supporto Safari */
       border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 16px;
+      border-radius: 1px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
       color: #ffffff;
     }
@@ -98,7 +98,7 @@
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border-radius: 16px;
+      border-radius: 1px;
       border-top: 1px solid rgba(255, 255, 255, 0.2);
     }
     
@@ -146,8 +146,9 @@
     
     .progress {
       width: 80%;
-      max-width: 300px;
+      max-width: 500px;
       margin-top: 20px;
+      height: 5px;
     }
   </style>
 </head>
@@ -155,9 +156,8 @@
 
 <!-- Loading Screen -->
 <div id="loading">
-  <h3>Caricamento in corso...</h3>
   <div class="progress">
-    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+    <div class="progress-bar progress-bar-animated" role="progressbar" style="width: 0%"></div>
   </div>
 </div>
 
@@ -248,7 +248,7 @@ function updateProgress(progress) {
 }
 
 // Carico la scena principale
-loader.load("./VR/assets/DEMO/ff_pov.glb", (gltf) => {
+loader.load("./assets/DEMO/ff_pov.glb", (gltf) => {
   scene.add(gltf.scene);
   gltf.scene.traverse((child) => {
     if (child.isMesh) {
@@ -262,7 +262,7 @@ loader.load("./VR/assets/DEMO/ff_pov.glb", (gltf) => {
 });
 
 // Carico il percorso camera
-loader.load("./VR/assets/DEMO/camera_paths.glb", (gltf) => {
+loader.load("./assets/DEMO/camera_paths.glb", (gltf) => {
   scene.add(gltf.scene);
   mixer = new THREE.AnimationMixer(gltf.scene);
   const clip = THREE.AnimationClip.findByName(gltf.animations, "ff_empty_action");
@@ -337,10 +337,10 @@ const markers = [
     fullyVisible: 0,
     fadeOutStart: 0.05,
     fadeOutEnd: 0.051,
-    title: "Titolo Marker 1",
+    title: "Cotto Nero",
     content: `
-      <p>Questo è un testo di esempio per il Marker 1.</p>
-      <img src="./VR/assets/DEMO/img.jpeg" class="img-fluid rounded shadow" alt="Immagine Marker 1">
+      <p>Innovative metallic designs forge new structures. Rough imperfections cut across polished surfaces, forging amazing contrasts.</p>
+      <img src="./assets/DEMO/1.jpg" class="img-fluid shadow" alt="Immagine Marker 1">
     `
   },
   {
@@ -352,8 +352,8 @@ const markers = [
     fadeOutEnd: 0.381,
     title: "Titolo Marker 2",
     content: `
-      <p>Questo è un testo di esempio per il Marker 1.</p>
-      <img src="./VR/assets/DEMO/img.jpeg" class="img-fluid rounded shadow" alt="Immagine Marker 1">
+      <p>Model No.‎18 è un divano rivestito in tessuto.‎ Nella progettazione del divano il team Hannabi ha tenuto conto non solo delle funzioni base che solitamente determinano il design ergonomico di un divano, ma hanno anche creato un modello multifunzionale da poter vivere nel massimo comfort, dal riposo pomeridiano al lavoro, grazie agli angoli dalla forma morbida, alle dimensioni ottimali del bracciolo e dello schienale e agli accessori.‎‎ Il peso del modello è stato progettato in modo tale che la stabilità non richieda il collegamento degli elementi, quindi in occasioni speciali, gli elementi possono essere riorganizzati quando si ricevono ospiti.</p>
+      <img src="./assets/DEMO/2.webp" class="img-fluid shadow" alt="Immagine Marker 1">
     `
   },
 ];
