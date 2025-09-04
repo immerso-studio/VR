@@ -290,8 +290,23 @@ const rimLight = new THREE.DirectionalLight(0xffaa33, 1);
 rimLight.position.set(-3, 2, 3);
 scene.add(rimLight);
 
+let isModalOpen = false;
+
+// Quando la modale si apre
+document.getElementById('markerModal').addEventListener('show.bs.modal', () => {
+  isModalOpen = true;
+});
+
+// Quando la modale si chiude
+document.getElementById('markerModal').addEventListener('hidden.bs.modal', () => {
+  isModalOpen = false;
+});
+
+
 // CONTROLLO SCROLL - Mouse
 window.addEventListener("wheel", (event) => {
+  if (isModalOpen) return; // blocca il controllo camera se la modale è aperta
+
   const isMouseScroll = Math.abs(event.deltaY) % 120 === 0;
   const sensitivity = isMouseScroll ? scrollSensitivity * 0.5 : scrollSensitivity;
   targetScrollValue += event.deltaY * sensitivity;
@@ -299,28 +314,32 @@ window.addEventListener("wheel", (event) => {
   event.preventDefault();
 }, { passive: false });
 
-// CONTROLLO SCROLL - Touch (per dispositivi mobile)
+// CONTROLLO SCROLL - Touch
 window.addEventListener('touchstart', (event) => {
+  if (isModalOpen) return; 
   touchStartY = event.touches[0].clientY;
   isScrolling = true;
 }, { passive: true });
 
 window.addEventListener('touchmove', (event) => {
+  if (isModalOpen) return;
   if (!isScrolling) return;
-  
+
   const touchY = event.touches[0].clientY;
   const deltaY = touchStartY - touchY;
   touchStartY = touchY;
-  
-  targetScrollValue += deltaY * scrollSensitivity * 2; // Moltiplicatore per touch
+
+  targetScrollValue += deltaY * scrollSensitivity * 2;
   targetScrollValue = Math.max(0, Math.min(1, targetScrollValue));
-  
+
   event.preventDefault();
 }, { passive: false });
 
 window.addEventListener('touchend', () => {
+  if (isModalOpen) return;
   isScrolling = false;
 });
+
 
 // Prevenire il comportamento di scroll nativo
 document.addEventListener('touchmove', (e) => {
@@ -337,10 +356,11 @@ const markers = [
     fullyVisible: 0,
     fadeOutStart: 0.05,
     fadeOutEnd: 0.051,
-    title: "Cotto Nero",
+    title: "BLACK DIAMOND",
     content: `
-      <p>Innovative metallic designs forge new structures. Rough imperfections cut across polished surfaces, forging amazing contrasts.</p>
-      <img src="./assets/DEMO/1.jpg" class="img-fluid shadow" alt="Immagine Marker 1">
+      <p>I momenti di socialità e incontro, sia per motivi professionali che personali, sono sempre più frequenti e per questo si è esigenti nei confronti degli spazi ospitanti. Gli si chiede di essere accoglienti, eleganti, funzionali. Ecco allora che la scelta di un materiale come Black Diamond diventa fondamentale per la definizione degli stessi. 
+        <br><br>Ricercatezza e carattere sembrano le parole chiave per creare la base su cui inserire complementi confortevoli e originali al tempo stesso, in modo da regalare un senso di intimità quasi domestico.</p>
+      <img src="./assets/DEMO/3.jpg" class="img-fluid shadow" alt="Immagine Marker 1">
     `
   },
   {
@@ -352,8 +372,15 @@ const markers = [
     fadeOutEnd: 0.381,
     title: "Titolo Marker 2",
     content: `
-      <p>Model No.‎18 è un divano rivestito in tessuto.‎ Nella progettazione del divano il team Hannabi ha tenuto conto non solo delle funzioni base che solitamente determinano il design ergonomico di un divano, ma hanno anche creato un modello multifunzionale da poter vivere nel massimo comfort, dal riposo pomeridiano al lavoro, grazie agli angoli dalla forma morbida, alle dimensioni ottimali del bracciolo e dello schienale e agli accessori.‎‎ Il peso del modello è stato progettato in modo tale che la stabilità non richieda il collegamento degli elementi, quindi in occasioni speciali, gli elementi possono essere riorganizzati quando si ricevono ospiti.</p>
+      <p>Model No.18 è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
+        delle funzioni base che solitamente determinano il design ergonomico di un divano, 
+        ma hanno anche creato un modello multifunzionale da poter vivere nel massimo comfort, 
+        dal riposo pomeridiano al lavoro, grazie agli angoli dalla forma morbida, alle dimensioni 
+        ottimali del bracciolo e dello schienale e agli accessori. Il peso del modello è stato progettato 
+        in modo tale che la stabilità non richieda il collegamento degli elementi, quindi in occasioni speciali, 
+        gli elementi possono essere riorganizzati quando si ricevono ospiti.</p>
       <img src="./assets/DEMO/2.webp" class="img-fluid shadow" alt="Immagine Marker 1">
+        <p><br>Un ripiano posizionabile sullo schienale che funge da tavolino per la colazione o per il computer sulle ginocchia. Una vasta scelta di cuscini. Pouf individuali.</p>
     `
   },
 ];
