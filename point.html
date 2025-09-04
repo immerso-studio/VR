@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scappano tutti</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            cursor: none; /* Nascondi il cursore di default */
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px black;
+        }
+        .custom-cursor {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+   
+    <img id="customCursor" class="custom-cursor" src="assets/meme/LOGO-IMMERSO-CRTV.png" alt="Custom cursor">
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script>
+        // Inizializzazione della scena
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        
+        // Configurazione della camera (ortografica per adattarsi allo schermo)
+        const aspect = window.innerWidth / window.innerHeight;
+        const camera = new THREE.OrthographicCamera(
+            -aspect, aspect, 1, -1, 0.1, 1000
+        );
+        camera.position.z = 5;
+        
+        // Renderer a tutto schermo
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        // Elemento del cursore personalizzato
+        const customCursor = document.getElementById('customCursor');
+        
+        // Array per i cerchi
+        const circles = [];
+        const circleCount = 800;
+        const circleGeometry = new THREE.CircleGeometry(1, 32);
+        const circleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        
+        
+        // Creazione dei cerchi
+        for (let i = 0; i < circleCount; i++) {
+            const circle = new THREE.Mesh(circleGeometry, circleMaterial);
+            
+            // Posizione casuale nello schermo (in coordinate normalizzate)
+            const radius = 0.03 + Math.random() * 0.04;
+            circle.position.x = (Math.random() - 0.5) * 2 * aspect;
+            circle.position.y = (Math.random() - 0.5) * 2;
+            
+            // Dati aggiuntivi per il cerchio
+            circle.userData = {
+                radius: radius,
+                velocity: new THREE.Vector2(
+                    (Math.random() - 0.5) * 0.01,
+                    (Math.random() - 0.5) * 0.01
+                ),
+                fearFactor: 0.5 + Math.random() * 1.5,
+                originalScale: new THREE.Vector3(1, 1, 1)
+            };
+            
+            // Imposta la scala iniziale
+            circle.scale.set(radius, radius, 1);
+            
+            scene.add(circle);
+            circles.push(circle);
+        }
+        
+        // Posizione del mouse (in coordinate normalizzate)
+        const mousePos = new THREE.Vector2(0, 0);
+        let mouseInWindow = false;
+        
+        // Gestori eventi mouse per il cursore personalizzato
+        window.addEventListener('mousemove', (event) => {
+            // Aggiorna la posizione del cursore personalizzato
+            customCursor.style.left = `${event.clientX}px`;
+            customCursor.style.top = `${event.clientY}px`;
+            
+            // Converti le coordinate del mouse in coordinate normalizzate (-1 to 1)
+            mousePos.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mousePos.y = - (event.clientY / window.innerHeight) * 2 + 1;
+            // Aggiusta per l'aspect ratio
+            mousePos.x *= aspect;
+            mouseInWindow = true;
+        });
+        
+        window.addEventListener('mouseout', () => {
+            mouseInWindow = false;
+        });
+        
+        // Gestione del ridimensionamento della finestra
+        function onWindowResize() {
+            // Aggiorna l'aspect ratio
+            const newAspect = window.innerWidth / window.innerHeight;
+            camera.left = -newAspect;
+            camera.right = newAspect;
+            camera.top = 1;
+            camera.bottom = -1;
+            camera.updateProjectionMatrix();
+            
+            // Aggiorna il renderer
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        window.addEventListener('resize', onWindowResize);
+        
+        // Funzione per far scappare i cerchi
+        function fleeFromMouse() {
+            if (!mouseInWindow) return;
+            
+            circles.forEach(circle => {
+                // Calcola la distanza dal mouse
+                const dx = circle.position.x - mousePos.x;
+                const dy = circle.position.y - mousePos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Area di influenza del mouse
+                const mouseRadius = 0.2;
+                
+                if (distance < mouseRadius * 2) {
+                    // Calcola la forza di fuga
+                    const fleeStrength = circle.userData.fearFactor * (mouseRadius * 2 - distance) / (mouseRadius * 2);
+                    const angle = Math.atan2(dy, dx);
+                    
+                    // Applica la forza di fuga
+                    circle.userData.velocity.x += Math.cos(angle) * fleeStrength * 0.05;
+                    circle.userData.velocity.y += Math.sin(angle) * fleeStrength * 0.05;
+                    
+                    // Effetto stretching quando scappano
+                    const stretchFactor = 1 + fleeStrength * 0.5;
+                    const squashFactor = 1 - fleeStrength * 0.2;
+                    circle.scale.x = circle.userData.radius * stretchFactor;
+                    circle.scale.y = circle.userData.radius * squashFactor;
+                    circle.rotation.z = angle;
+                } else {
+                    // Ritorna alla forma originale
+                    circle.scale.x += (circle.userData.radius - circle.scale.x) * 0.1;
+                    circle.scale.y += (circle.userData.radius - circle.scale.y) * 0.1;
+                    circle.rotation.z *= 0.9;
+                }
+            });
+        }
+        
+        // Funzione per il rilevamento delle collisioni
+        function checkCollisions() {
+            for (let i = 0; i < circles.length; i++) {
+                for (let j = i + 1; j < circles.length; j++) {
+                    const circleA = circles[i];
+                    const circleB = circles[j];
+                    
+                    const dx = circleB.position.x - circleA.position.x;
+                    const dy = circleB.position.y - circleA.position.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    const minDistance = circleA.userData.radius + circleB.userData.radius;
+                    
+                    if (distance < minDistance) {
+                        // Collisione rilevata
+                        const angle = Math.atan2(dy, dx);
+                        const overlap = minDistance - distance;
+                        
+                        // Sposta i cerchi per risolvere la collisione
+                        const moveX = overlap * Math.cos(angle) * 0.5;
+                        const moveY = overlap * Math.sin(angle) * 0.5;
+                        
+                        circleA.position.x -= moveX;
+                        circleA.position.y -= moveY;
+                        circleB.position.x += moveX;
+                        circleB.position.y += moveY;
+                        
+                        // Aggiungi una piccola forza di rimbalzo
+                        circleA.userData.velocity.x -= moveX * 0.05;
+                        circleA.userData.velocity.y -= moveY * 0.05;
+                        circleB.userData.velocity.x += moveX * 0.05;
+                        circleB.userData.velocity.y += moveY * 0.05;
+                    }
+                }
+            }
+        }
+        
+        // Animazione
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Fai scappare i cerchi dal mouse
+            fleeFromMouse();
+            
+            // Aggiorna la posizione dei cerchi
+            circles.forEach(circle => {
+                // Applica la velocità
+                circle.position.x += circle.userData.velocity.x;
+                circle.position.y += circle.userData.velocity.y;
+                
+                // Rimbalzo dai bordi dello schermo con attrito
+                const radius = circle.userData.radius;
+                const aspect = camera.right;
+                
+                if (circle.position.x < -aspect + radius) {
+                    circle.position.x = -aspect + radius;
+                    circle.userData.velocity.x *= -0.8;
+                } else if (circle.position.x > aspect - radius) {
+                    circle.position.x = aspect - radius;
+                    circle.userData.velocity.x *= -0.8;
+                }
+                
+                if (circle.position.y < -1 + radius) {
+                    circle.position.y = -1 + radius;
+                    circle.userData.velocity.y *= -0.8;
+                } else if (circle.position.y > 1 - radius) {
+                    circle.position.y = 1 - radius;
+                    circle.userData.velocity.y *= -0.8;
+                }
+                
+                // Attrito
+                circle.userData.velocity.multiplyScalar(0.98);
+            });
+            
+            // Controlla le collisioni
+            checkCollisions();
+            
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+    </script>
+</body>
+</html>

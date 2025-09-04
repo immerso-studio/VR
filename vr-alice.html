@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>VR Portal Room with Video Texture</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+    #info {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      color: white;
+      font-family: Arial, sans-serif;
+      pointer-events: none;
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="info">Walk through the pink portal to enter the alternate reality<br>Press 'R' to reset</div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { VRButton } from 'three/addons/webxr/VRButton.js';
+    import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+
+    let camera, cameraRig, renderer;
+    let sceneA, sceneB, activeScene;
+    let portalCenterMesh;
+    let logoMesh;
+    let switched = false;
+    let doorMixer;
+    let doorSound;
+    let doorSoundPlayed = false;
+    let backgroundMusic;
+    let clock = new THREE.Clock();
+    let contextSphere;
+    let blackFadePlane, blackFadeMaterial;
+    let logoShown = false;
+    let doorOpened = false;
+    let startTime = null;
+    let portalSwitchTriggered = false;
+    let portalSwitchTime = null;
+
+    init();
+    animate();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.xr.enabled = true;
+      document.body.appendChild(renderer.domElement);
+      document.body.appendChild(VRButton.createButton(renderer));
+
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0.3, 1.5, 0);
+
+      cameraRig = new THREE.Group();
+      cameraRig.position.set(0, 0, 4);
+      cameraRig.add(camera);
+
+      sceneA = new THREE.Scene();
+      sceneA.background = new THREE.Color(0x222222);
+      sceneA.add(cameraRig);
+      addLights(sceneA);
+      loadRoom(sceneA);
+
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load('assets/hdris/tile--.jpg', (floorTexture) => {
+        floorTexture.wrapS = THREE.RepeatWrapping;
+        floorTexture.wrapT = THREE.RepeatWrapping;
+        floorTexture.repeat.set(60, 60);
+        const floorMat = new THREE.MeshStandardMaterial({
+          map: floorTexture,
+          roughness: 0.6,
+          metalness: 0.0
+        });
+        const floorGeo = new THREE.PlaneGeometry(200, 200);
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        sceneA.add(floor);
+      });
+
+      const cubeGeo = new THREE.BoxGeometry(1.1, 2.6, 0.01);
+      const video = document.createElement('video');
+      video.src = 'assets/video/portale.mp4';
+      video.crossOrigin = 'anonymous';
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.play();
+
+      const videoTexture = new THREE.VideoTexture(video);
+      videoTexture.minFilter = THREE.LinearFilter;
+      videoTexture.magFilter = THREE.LinearFilter;
+      videoTexture.format = THREE.RGBAFormat;
+      videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+      const cubeMat = new THREE.MeshStandardMaterial({
+        map: videoTexture,
+        side: THREE.DoubleSide,
+        metalness: 0.5,
+        roughness: 0.1
+      });
+
+      portalCenterMesh = new THREE.Mesh(cubeGeo, cubeMat);
+      portalCenterMesh.position.set(0.4, 1.3, -0.05);
+      portalCenterMesh.castShadow = true;
+      portalCenterMesh.receiveShadow = true;
+      sceneA.add(portalCenterMesh);
+
+      textureLoader.load('assets/video/LOGO-3D-GOLD.png', (logoTexture) => {
+        logoTexture.colorSpace = THREE.SRGBColorSpace;
+        logoTexture.minFilter = THREE.LinearFilter;
+        logoTexture.magFilter = THREE.LinearFilter;
+
+        const logoMaterial = new THREE.MeshBasicMaterial({
+          map: logoTexture,
+          transparent: true,
+          opacity: 0,
+          blending: THREE.NormalBlending,
+          alphaTest: 0.01,
+          depthWrite: false,
+        });
+
+        const logoGeometry = new THREE.PlaneGeometry(2, 2);
+        logoMesh = new THREE.Mesh(logoGeometry, logoMaterial);
+        logoMesh.position.set(0.3, 1.6, 1.7);
+        logoMesh.renderOrder = 1;
+        sceneA.add(logoMesh);
+      });
+
+      loadDoorModel(sceneA);
+
+      doorSound = new Audio('assets/video/porta-sound.mp3');
+      doorSound.preload = 'auto';
+      doorSound.volume = 0.8;
+      doorSound.loop = false;
+
+      backgroundMusic = new Audio('assets/alice/musica.mp3');
+      backgroundMusic.loop = true;
+      backgroundMusic.preload = 'auto';
+      backgroundMusic.volume = 0.5;
+
+      sceneB = new THREE.Scene();
+      sceneB.background = new THREE.Color(0x003366);
+      sceneB.add(cameraRig);
+      addLights(sceneB);
+      loadAltRoom(sceneB);
+
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+      new RGBELoader()
+        .setPath('assets/hdris/')
+        .load('trees.hdr', function (hdrTexture) {
+          hdrTexture.mapping = THREE.EquirectangularReflectionMapping;
+          hdrTexture.colorSpace = THREE.SRGBColorSpace;
+          const envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
+          sceneB.environment = envMap;
+          hdrTexture.dispose();
+          pmremGenerator.dispose();
+        });
+
+      textureLoader.load('assets/context.jpeg', (texture) => {
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        texture.colorSpace = THREE.SRGBColorSpace;
+        const sphereGeo = new THREE.SphereGeometry(50, 100, 40);
+        const sphereMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
+        contextSphere = new THREE.Mesh(sphereGeo, sphereMat);
+        contextSphere.visible = false;
+        sceneB.add(contextSphere);
+      });
+
+      blackFadeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0 });
+      const blackFadeGeometry = new THREE.PlaneGeometry(10, 10);
+      blackFadePlane = new THREE.Mesh(blackFadeGeometry, blackFadeMaterial);
+      blackFadePlane.position.set(0, 0, -1);
+      camera.add(blackFadePlane);
+
+      activeScene = sceneA;
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'r' || e.key === 'R') {
+          switched = false;
+          portalSwitchTriggered = false;
+          activeScene = sceneA;
+          cameraRig.position.set(0, 0, 3);
+          if (contextSphere) contextSphere.visible = false;
+          blackFadeMaterial.opacity = 0;
+          clock.start();
+          startTime = null;
+          logoShown = false;
+          doorOpened = false;
+          doorSoundPlayed = false;
+          portalSwitchTime = null;
+        }
+      });
+
+      window.addEventListener('resize', onWindowResize);
+
+      renderer.xr.addEventListener('sessionstart', () => {
+        clock.start();
+        startTime = null;
+        logoShown = false;
+        doorOpened = false;
+        doorSoundPlayed = false;
+        portalSwitchTriggered = false;
+        portalSwitchTime = null;
+        blackFadeMaterial.opacity = 0;
+        cameraRig.position.set(0.3, 0.3, 2.5);
+        if (backgroundMusic) {
+          backgroundMusic.currentTime = 0;
+          backgroundMusic.play().catch(err => console.warn('Background music error:', err));
+        }
+      });
+
+      renderer.xr.addEventListener('sessionend', () => {
+        if (backgroundMusic) {
+          backgroundMusic.pause();
+          backgroundMusic.currentTime = 0;
+        }
+      });
+    }
+
+    function animate() {
+      renderer.setAnimationLoop(() => {
+        const delta = clock.getDelta();
+        const elapsed = clock.getElapsedTime();
+
+        if (startTime === null) startTime = elapsed;
+        const relativeTime = elapsed - startTime;
+
+        if (doorMixer) doorMixer.update(delta);
+
+        if (relativeTime >= 30 && logoMesh && !logoShown) {
+          logoShown = true;
+        }
+
+        if (logoShown && logoMesh && logoMesh.material.opacity < 1) {
+          logoMesh.material.opacity = Math.min(1, logoMesh.material.opacity + delta);
+        }
+
+        if (relativeTime >= 45 && !doorOpened) {
+          doorOpened = true;
+          if (doorMixer) {
+            doorMixer.stopAllAction();
+            doorMixer._actions.forEach(action => {
+              action.reset();
+              action.play();
+            });
+          }
+        }
+
+        if (relativeTime >= 48.5 && doorSound && !doorSoundPlayed) {
+          doorSoundPlayed = true;
+          doorSound.currentTime = 0;
+          doorSound.play().catch(err => console.warn('Audio playback error:', err));
+        }
+
+        checkPortalEntry(elapsed);
+
+        if (portalSwitchTriggered && portalSwitchTime !== null) {
+          const timeSinceSwitch = elapsed - portalSwitchTime;
+
+          if (timeSinceSwitch >= 0 && timeSinceSwitch < 3) {
+            blackFadeMaterial.opacity = 1;
+          } else if (timeSinceSwitch >= 3 && timeSinceSwitch <= 8) {
+            blackFadeMaterial.opacity = 1 - ((timeSinceSwitch - 3) / 8);
+          } else if (timeSinceSwitch > 8) {
+            blackFadeMaterial.opacity = 0;
+          }
+        }
+
+        updatePortalEffect();
+        renderer.render(activeScene, camera);
+      });
+    }
+
+    function checkPortalEntry(currentTime) {
+      if (switched || portalSwitchTriggered) return;
+      const camPos = new THREE.Vector3();
+      camera.getWorldPosition(camPos);
+      const portalBox = new THREE.Box3().setFromObject(portalCenterMesh).expandByScalar(0.2);
+
+      if (portalBox.containsPoint(camPos)) {
+        portalSwitchTriggered = true;
+        portalSwitchTime = currentTime;
+        activeScene = sceneB;
+        if (contextSphere) contextSphere.visible = true;
+      }
+    }
+
+    function updatePortalEffect() {
+      if (switched || !portalCenterMesh) return;
+      const camPos = new THREE.Vector3();
+      camera.getWorldPosition(camPos);
+      const portalPos = new THREE.Vector3();
+      portalCenterMesh.getWorldPosition(portalPos);
+      const distance = camPos.distanceTo(portalPos);
+      const maxDistance = 2.0;
+      const intensity = Math.max(0, (maxDistance - distance) / maxDistance);
+      portalCenterMesh.material.emissiveIntensity = intensity * 2;
+    }
+
+    function addLights(scene) {
+      const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+      hemi.position.set(0, 1, 0);
+      scene.add(hemi);
+    }
+
+    function loadRoom(scene) {
+      const loader = new GLTFLoader();
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      loader.setDRACOLoader(dracoLoader);
+      loader.load('assets/alice/Stanza-scansionata-3.glb', gltf => {
+        gltf.scene.scale.set(1.3, 1.3, 1.3);
+        gltf.scene.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+        scene.add(gltf.scene);
+      });
+    }
+
+    function loadAltRoom(scene) {
+      const loader = new GLTFLoader();
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      loader.setDRACOLoader(dracoLoader);
+      loader.load('assets/alice/Prova-teaparty-5.glb', gltf => {
+        gltf.scene.scale.set(2, 2, 2);
+        gltf.scene.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+        scene.add(gltf.scene);
+      });
+    }
+
+    function loadDoorModel(scene) {
+      const loader = new GLTFLoader();
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      loader.setDRACOLoader(dracoLoader);
+      loader.load('assets/alice/Porta-animata-2.glb', gltf => {
+        gltf.scene.scale.set(1.3, 1.3, 1.3);
+        const door = gltf.scene;
+        door.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+        scene.add(door);
+        doorMixer = new THREE.AnimationMixer(door);
+        gltf.animations.forEach(clip => {
+          const action = doorMixer.clipAction(clip);
+          action.clampWhenFinished = true;
+          action.loop = THREE.LoopOnce;
+        });
+      });
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+  </script>
+</body>
+</html>
