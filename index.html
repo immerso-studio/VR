@@ -248,7 +248,7 @@ function updateProgress(progress) {
 }
 
 // Carico la scena principale
-loader.load("./assets/DEMO/ff_pov.glb", (gltf) => {
+loader.load("./VR/assets/DEMO/ff_pov.glb", (gltf) => {
   scene.add(gltf.scene);
   gltf.scene.traverse((child) => {
     if (child.isMesh) {
@@ -262,7 +262,7 @@ loader.load("./assets/DEMO/ff_pov.glb", (gltf) => {
 });
 
 // Carico il percorso camera
-loader.load("./assets/DEMO/camera_paths.glb", (gltf) => {
+loader.load("./VR/assets/DEMO/camera_paths.glb", (gltf) => {
   scene.add(gltf.scene);
   mixer = new THREE.AnimationMixer(gltf.scene);
   const clip = THREE.AnimationClip.findByName(gltf.animations, "ff_empty_action");
@@ -340,7 +340,7 @@ const markers = [
     title: "Titolo Marker 1",
     content: `
       <p>Questo è un testo di esempio per il Marker 1.</p>
-      <img src="./assets/DEMO/img.jpeg" class="img-fluid rounded shadow" alt="Immagine Marker 1">
+      <img src="./VR/assets/DEMO/img.jpeg" class="img-fluid rounded shadow" alt="Immagine Marker 1">
     `
   },
   {
@@ -353,7 +353,7 @@ const markers = [
     title: "Titolo Marker 2",
     content: `
       <p>Questo è un testo di esempio per il Marker 1.</p>
-      <img src="./assets/DEMO/img.jpeg" class="img-fluid rounded shadow" alt="Immagine Marker 1">
+      <img src="./VR/assets/DEMO/img.jpeg" class="img-fluid rounded shadow" alt="Immagine Marker 1">
     `
   },
 ];
