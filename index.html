@@ -247,6 +247,19 @@ function updateProgress(progress) {
   progressBar.style.width = `${progress}%`;
 }
 
+// 🔹 Stato caricamento dei GLB
+let povLoaded = false;
+let cameraPathLoaded = false;
+
+function tryHideLoader() {
+  if (povLoaded && cameraPathLoaded) {
+    updateProgress(100);
+    setTimeout(() => {
+      document.getElementById('loading').style.display = 'none';
+    }, 500);
+  }
+}
+
 // Carico la scena principale
 loader.load("./assets/DEMO/ff_pov.glb", (gltf) => {
   scene.add(gltf.scene);
@@ -257,6 +270,8 @@ loader.load("./assets/DEMO/ff_pov.glb", (gltf) => {
     }
   });
   updateProgress(50);
+  povLoaded = true;
+  tryHideLoader();
 }, undefined, (error) => {
   console.error("Errore nel caricamento del modello:", error);
 });
@@ -271,12 +286,8 @@ loader.load("./assets/DEMO/camera_paths.glb", (gltf) => {
     action.play();
   }
   dummyCamera = gltf.scene.getObjectByName("ff_empty");
-  updateProgress(100);
-  
-  // Nascondi il loading screen
-  setTimeout(() => {
-    document.getElementById('loading').style.display = 'none';
-  }, 500);
+  cameraPathLoaded = true;
+  tryHideLoader();
 }, undefined, (error) => {
   console.error("Errore nel caricamento del percorso camera:", error);
 });
