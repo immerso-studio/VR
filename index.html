@@ -370,7 +370,7 @@ const markers = [
     fullyVisible: 0.281,
     fadeOutStart: 0.38,
     fadeOutEnd: 0.381,
-    title: "Titolo Marker 2",
+    title: "DIVANO",
     content: `
       <p>Model No.18 è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
         delle funzioni base che solitamente determinano il design ergonomico di un divano, 
@@ -401,10 +401,25 @@ function showModal(title, content) {
   
   // Aggiorna il contenuto della modale
   document.getElementById('markerModalLabel').textContent = title;
-  document.querySelector('.modal-body').innerHTML = content;
+  const modalBody = document.querySelector('.modal-body');
+  modalBody.innerHTML = content;
+  
+  // Nascondi i contenuti inizialmente
+  const children = modalBody.children;
+  gsap.set(children, { opacity: 0, y: 20 });
   
   // Mostra la modale
   markerModal.show();
+  
+  // Anima i contenuti della modal-body in sequenza
+  const tl = gsap.timeline({ delay: 0.2 });
+  tl.to(children, {
+    opacity: 1,
+    y: 0,
+    duration: 0.4,
+    stagger: 0.2, // ritardo sequenziale
+    ease: "power2.out"
+  });
   
   // Gestisci il ripristino della focale quando la modale viene chiusa
   document.getElementById('markerModal').addEventListener('hidden.bs.modal', function () {
@@ -414,8 +429,9 @@ function showModal(title, content) {
       ease: "power2.inOut", 
       onUpdate: () => camera.updateProjectionMatrix() 
     });
-  }, {once: true}); // L'event listener viene rimosso dopo il primo utilizzo
+  }, {once: true});
 }
+
 
 // Funzione per aggiornare un singolo marker
 function updateMarker(markerData) {
