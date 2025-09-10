@@ -83,14 +83,32 @@
       margin: 1.75rem auto;
     }
     
+    /* MODIFICA: Posizionamento a sinistra per desktop */
+    @media (min-width: 992px) {
+      .marker-modal .modal-dialog {
+        margin: 1.75rem 0 1.75rem 1.75rem;
+        max-width: 500px;
+        position: fixed;
+        left: 0;
+        top: 0;
+        transform: none !important;
+      }
+    }
+    
     .marker-modal .modal-content {
-      background: rgba(255, 255, 255, 0.15); /* leggermente trasparente */
-      backdrop-filter: blur(12px) saturate(180%); /* effetto vetro smerigliato */
+      background: rgba(0, 0, 0, 0.5); /* leggermente trasparente */
+      backdrop-filter: blur(50px) saturate(100%); /* effetto vetro smerigliato */
       -webkit-backdrop-filter: blur(12px) saturate(180%); /* supporto Safari */
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.3);
       border-radius: 1px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 0px 80px rgba(0, 0, 0, 0.5);
       color: #ffffff;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .marker-modal .btn-close {
+      filter: invert(1);
     }
         
     /* Header con vetro scuro */
@@ -102,15 +120,66 @@
       border-top: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    .marker-modal .btn-close {
-      filter: invert(1);
+    /* Menu snap points */
+    #snap-menu {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 15px;
+      z-index: 100;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      justify-content: center;
+      transition: all 0.5s ease;
+      overflow-x: auto;
+      scrollbar-width: none; /* Firefox */
+      max-width: 90%;
+    }
+    
+    #snap-menu::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Edge */
+    }
+    
+    .snap-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      font-weight: 500;
+      flex-shrink: 0;
+      filter: blur(1.5px);
+      opacity: 0.7;
+    }
+    
+    .snap-btn.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      filter: blur(0);
+      opacity: 1;
+      transform: scale(1.1);
+      z-index: 2;
+    }
+    
+    .snap-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
     }
     
     /* Per dispositivi mobili */
-    @media (max-width: 768px) {
+    @media (max-width: 991px) {
       .marker-modal .modal-dialog {
         max-width: 95%;
-        margin: 30px;
+        margin: 30px auto;
       }
       
       .marker {
@@ -124,6 +193,17 @@
         overflow: hidden;
         width: 100%;
         height: 100%;
+      }
+      
+      #snap-menu {
+        padding: 8px 15px;
+        max-width: 85%;
+      }
+      
+      .snap-btn {
+        padding: 6px 12px;
+        font-size: 14px;
+        filter: blur(1px);
       }
     }
     
@@ -206,13 +286,19 @@
   <button id="startButton" class="btn btn-light btn-lg px-5 py-3 shadow">START</button>
 </div>
 
+<!-- Menu Snap Points -->
+<div id="snap-menu">
+  <button class="snap-btn" data-snap="0.001">Cucina</button>
+  <button class="snap-btn" data-snap="0.35">Salotto</button>
+  <button class="snap-btn" data-snap="0.5">Sala</button>
+</div>
 
 <!-- MARKER UI -->
 <div id="marker1" class="marker" aria-label="Apri Dettagli 1" title="Apri Dettagli 1"><b>+</b></div>
 <div id="marker2" class="marker" aria-label="Apri Dettagli 2" title="Apri Dettagli 2"><b>+</b></div>
 
 <!-- Modale per i marker -->
-<div class="modal fade marker-modal" id="markerModal" tabindex="-1" aria-labelledby="markerModalLabel" aria-hidden="true">
+<div class="modal fade marker-modal" id="markerModal" tabindex="-1" aria-labelledby="markerModalLabel" aria-hidden="true" data-bs-backdrop="false">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
@@ -293,6 +379,12 @@ let hoodAction = null;
 let isHoodAnimationPlaying = false;
 let hoodAnimationDuration = 0;
 let isHoodAnimationReversing = false;
+
+// Variabile per tenere traccia dello stato dei marker (visibile/nascosto per click)
+const markerVisibilityState = {};
+
+// Variabile per distinguere scroll vs menu
+let isSnappingFromMenu = false;
 
 // Funzione per aggiornare la barra di progresso
 function updateProgress(progress) {
@@ -385,6 +477,24 @@ document.getElementById('markerModal').addEventListener('show.bs.modal', () => {
 // Quando la modale si chiude
 document.getElementById('markerModal').addEventListener('hidden.bs.modal', () => {
   isModalOpen = false;
+  
+  // Ripristina la visibilità del marker con un fade in
+  if (currentMarkerId) {
+    const markerElement = document.getElementById(currentMarkerId);
+    markerVisibilityState[currentMarkerId] = true;
+    
+    // Forza un aggiornamento della posizione del marker
+    const markerData = markers.find(m => m.id === currentMarkerId);
+    if (markerData) {
+      updateMarker(markerData);
+    }
+    
+    // Animazione di fade in
+    gsap.fromTo(markerElement,
+      { opacity: 0 },
+      { opacity: 1, duration: 0.5, ease: "power1.out" }
+    );
+  }
   
   // Se l'animazione del marker1 è attiva, farla andare in reverse
   if (currentMarkerId === "marker1" && hoodAction && isHoodAnimationPlaying) {
@@ -483,8 +593,7 @@ const markerModal = new bootstrap.Modal(document.getElementById('markerModal'));
 
 // Funzione per mostrare la modale
 function showModal(title, content) {
-  // Animazione della focale (FOV)
-  const targetFOV = Math.max(25, baseFOV - 5); // Riduci il FOV ma non troppo
+  const targetFOV = Math.max(25, baseFOV - 5);
   gsap.to(camera, { 
     fov: targetFOV, 
     duration: 0.8, 
@@ -492,29 +601,24 @@ function showModal(title, content) {
     onUpdate: () => camera.updateProjectionMatrix() 
   });
   
-  // Aggiorna il contenuto della modale
   document.getElementById('markerModalLabel').textContent = title;
   const modalBody = document.querySelector('.modal-body');
   modalBody.innerHTML = content;
   
-  // Nascondi i contenuti inizialmente
   const children = modalBody.children;
   gsap.set(children, { opacity: 0, y: 20 });
   
-  // Mostra la modale
   markerModal.show();
   
-  // Anima i contenuti della modal-body in sequenza
   const tl = gsap.timeline({ delay: 0.2 });
   tl.to(children, {
     opacity: 1,
     y: 0,
     duration: 0.4,
-    stagger: 0.2, // ritardo sequenziale
+    stagger: 0.2,
     ease: "power2.out"
   });
   
-  // Gestisci il ripristino della focale quando la modale viene chiusa
   document.getElementById('markerModal').addEventListener('hidden.bs.modal', function () {
     gsap.to(camera, { 
       fov: baseFOV, 
@@ -529,6 +633,12 @@ function showModal(title, content) {
 function updateMarker(markerData) {
   const markerElement = document.getElementById(markerData.id);
 
+  if (markerVisibilityState[markerData.id] === false) {
+    markerElement.style.opacity = 0;
+    markerElement.style.pointerEvents = "none";
+    return;
+  }
+
   let opacity = 0;
   if (currentScrollValue >= markerData.fadeInStart && currentScrollValue <= markerData.fullyVisible) {
     opacity = (currentScrollValue - markerData.fadeInStart) / Math.max(0.000001, (markerData.fullyVisible - markerData.fadeInStart));
@@ -538,30 +648,37 @@ function updateMarker(markerData) {
     opacity = 1 - (currentScrollValue - markerData.fadeOutStart) / Math.max(0.000001, (markerData.fadeOutEnd - markerData.fadeOutStart));
   }
 
-  // Proiezione in 2D
   const vector = markerData.position.clone();
   vector.project(camera);
   const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
   const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
   markerElement.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
 
-  // Visibilità e interazione
   const inViewport = (vector.z < 1 && vector.x > -1 && vector.x < 1 && vector.y > -1 && vector.y < 1);
   markerElement.style.opacity = inViewport ? opacity : 0;
   markerElement.style.pointerEvents = (inViewport && opacity > 0.6) ? "auto" : "none";
 }
 
-// Click handler per i marker -> Mostra modale
+// Click handler per i marker
 markers.forEach(marker => {
   const markerElement = document.getElementById(marker.id);
+  markerVisibilityState[marker.id] = true;
+  
   markerElement.addEventListener("click", () => {
-    // feedback sul marker
+    gsap.to(markerElement, {
+      opacity: 0,
+      duration: 0.3,
+      ease: "power1.out",
+      onComplete: () => {
+        markerVisibilityState[marker.id] = false;
+      }
+    });
+
     gsap.fromTo(markerElement, 
       { scale: 1 }, 
       { scale: 0.92, duration: 0.08, yoyo: true, repeat: 1, ease: "power1.inOut" }
     );
 
-    // Se è il marker1, avvia l'animazione specifica
     if (marker.id === "marker1" && hoodAction) {
       hoodAction.reset();
       hoodAction.timeScale = 1;
@@ -571,11 +688,54 @@ markers.forEach(marker => {
       isHoodAnimationReversing = false;
     }
 
-    // Memorizza il marker corrente
     currentMarkerId = marker.id;
-    
-    // mostra la modale
     showModal(marker.title, marker.content);
+  });
+});
+
+// Funzione per centrare il pulsante attivo
+function centerActiveSnapButton() {
+  const activeButton = document.querySelector('.snap-btn.active');
+  const menu = document.getElementById('snap-menu');
+  
+  if (activeButton) {
+    const menuRect = menu.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+    const offset = buttonRect.left - menuRect.left - (menuRect.width / 2) + (buttonRect.width / 2);
+    menu.scrollTo({ left: menu.scrollLeft + offset, behavior: 'smooth' });
+  }
+}
+
+// Aggiorna il menu snap
+function updateSnapMenu() {
+  const buttons = document.querySelectorAll('.snap-btn');
+  let activeFound = false;
+  
+  buttons.forEach(button => {
+    const snapValue = parseFloat(button.dataset.snap);
+    const isActive = Math.abs(currentScrollValue - snapValue) < snapThreshold;
+    if (isActive) {
+      button.classList.add('active');
+      activeFound = true;
+    } else {
+      button.classList.remove('active');
+    }
+  });
+  
+  if (activeFound) {
+    setTimeout(centerActiveSnapButton, 50);
+  }
+}
+
+// Event listener per pulsanti snap
+document.querySelectorAll('.snap-btn').forEach(button => {
+  button.addEventListener('click', () => {
+    const snapValue = parseFloat(button.dataset.snap);
+    targetScrollValue = snapValue;
+    isSnappingFromMenu = true; // 🔹 segno che arrivo da menu
+    
+    button.classList.add('active');
+    setTimeout(centerActiveSnapButton, 50);
   });
 });
 
@@ -583,18 +743,24 @@ markers.forEach(marker => {
 function animate() {
   requestAnimationFrame(animate);
 
-  // Smooth scroll
   const diff = targetScrollValue - currentScrollValue;
   currentScrollValue += diff * smoothFactor;
 
-  // Snap logic
-  for (let snap of snapPoints) {
-    if (Math.abs(currentScrollValue - snap) < snapThreshold) {
-      targetScrollValue = THREE.MathUtils.lerp(targetScrollValue, snap, 0.05);
+  // Snap logic SOLO se non arrivo da menu
+  if (!isSnappingFromMenu) {
+    for (let snap of snapPoints) {
+      if (Math.abs(currentScrollValue - snap) < snapThreshold) {
+        targetScrollValue = THREE.MathUtils.lerp(targetScrollValue, snap, 0.02);
+      }
     }
   }
 
-  // Aggiorna animazione camera
+  // Se arrivo da menu ed ho praticamente raggiunto la destinazione
+  if (isSnappingFromMenu && Math.abs(currentScrollValue - targetScrollValue) < 0.0005) {
+    currentScrollValue = targetScrollValue; 
+    isSnappingFromMenu = false; 
+  }
+
   if (mixer && action) {
     let duration = action.getClip().duration;
     mixer.setTime(currentScrollValue * duration);
@@ -604,17 +770,12 @@ function animate() {
     }
   }
   
-  // Aggiorna animazione del marker1 se attiva
   if (hoodMixer) {
-    const delta = 0.016; // tempo tra i frame (60fps)
+    const delta = 0.016;
     hoodMixer.update(delta);
-    
-    // Controlla se l'animazione in avanti è completata
     if (isHoodAnimationPlaying && !isHoodAnimationReversing && hoodAction.time >= hoodAnimationDuration) {
       hoodAction.paused = true;
     }
-    
-    // Controlla se l'animazione inversa è completata
     if (isHoodAnimationReversing && hoodAction.time <= 0) {
       hoodAction.paused = true;
       isHoodAnimationPlaying = false;
@@ -622,21 +783,20 @@ function animate() {
     }
   }
 
-  // Aggiorna i marker
   markers.forEach(updateMarker);
-
+  updateSnapMenu();
   renderer.render(scene, camera);
 }
 animate();
 
-// Gestione del ridimensionamento della finestra
+// Resize
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Previeni il comportamento di zoom con doppio tap su mobile
+// Previeni doppio tap zoom
 let lastTap = 0;
 document.addEventListener('touchend', function(event) {
   const currentTime = new Date().getTime();
@@ -647,8 +807,9 @@ document.addEventListener('touchend', function(event) {
   lastTap = currentTime;
 }, false);
 
-// Previeni il menu contestuale su mobile
+// Previeni menu contestuale
 document.addEventListener('contextmenu', event => event.preventDefault());
 </script>
+
 </body>
 </html>
