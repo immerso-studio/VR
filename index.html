@@ -99,11 +99,11 @@
       background: rgba(0, 0, 0, 0.5); /* leggermente trasparente */
       backdrop-filter: blur(50px) saturate(100%); /* effetto vetro smerigliato */
       -webkit-backdrop-filter: blur(12px) saturate(180%); /* supporto Safari */
-      border: 2px solid rgba(255, 255, 255, 0.3);
+      border: 3px solid rgba(255, 255, 255, 0.3);
       border-radius: 1px;
       box-shadow: 0 0px 80px rgba(0, 0, 0, 0.5);
       color: #ffffff;
-      max-height: 90vh;
+      max-height: 95vh;
       overflow-y: auto;
     }
 
@@ -237,8 +237,8 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(10px);      
       display: flex;
       justify-content: center;
@@ -270,6 +270,23 @@
       border: 3px solid rgba(255, 255, 255, 0.8);
     }
 
+    .logo {
+      max-width: 230px;
+      height: auto;
+      position: fixed;
+      filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.2));
+      margin-top: 600px;
+    }
+
+    .logoText {
+      position: fixed;
+      font-size: 0.8rem;
+      margin-top: 500px;
+      color: #8f8f8f;
+      font-family: Helvetica;
+    }
+        
+
   </style>
 </head>
 <body>
@@ -284,13 +301,15 @@
 <!-- Schermata Start -->
 <div id="startScreen">
   <button id="startButton" class="btn btn-light btn-lg px-5 py-3 shadow">START</button>
+  <p class="logoText">Created by:</p>
+  <img src="./assets/DEMO/LOGO-IMMERSO.png" alt="Logo" class="logo">
 </div>
 
 <!-- Menu Snap Points -->
 <div id="snap-menu">
-  <button class="snap-btn" data-snap="0.001">Cucina</button>
-  <button class="snap-btn" data-snap="0.35">Salotto</button>
-  <button class="snap-btn" data-snap="0.5">Sala</button>
+  <button class="snap-btn" data-snap="0.001">1. Cucina</button>
+  <button class="snap-btn" data-snap="0.35">2. Salotto</button>
+  <button class="snap-btn" data-snap="0.5">3. Sala</button>
 </div>
 
 <!-- MARKER UI -->
@@ -299,7 +318,7 @@
 
 <!-- Modale per i marker -->
 <div class="modal fade marker-modal" id="markerModal" tabindex="-1" aria-labelledby="markerModalLabel" aria-hidden="true" data-bs-backdrop="false">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="markerModalLabel">Titolo Marker</h5>
@@ -564,6 +583,12 @@ const markers = [
       <p>I momenti di socialità e incontro, sia per motivi professionali che personali, sono sempre più frequenti e per questo si è esigenti nei confronti degli spazi ospitanti. Gli si chiede di essere accoglienti, eleganti, funzionali. Ecco allora che la scelta di un materiale come Black Diamond diventa fondamentale per la definizione degli stessi. 
         <br><br>Ricercatezza e carattere sembrano le parole chiave per creare la base su cui inserire complementi confortevoli e originali al tempo stesso, in modo da regalare un senso di intimità quasi domestico.</p>
       <img src="./assets/DEMO/3.jpg" class="img-fluid shadow" alt="Immagine Marker 1">
+      <p><br>Model No.18 è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
+        delle funzioni base che solitamente determinano il design ergonomico di un divano, 
+        ma hanno anche creato un modello multifunzionale da poter vivere nel massimo comfort, 
+        dal riposo pomeridiano al lavoro, grazie agli angoli dalla forma morbida, alle dimensioni 
+        ottimali del bracciolo e dello schienale e agli accessori.</p>
+
     `
   },
   {
@@ -756,7 +781,7 @@ function animate() {
   }
 
   // Se arrivo da menu ed ho praticamente raggiunto la destinazione
-  if (isSnappingFromMenu && Math.abs(currentScrollValue - targetScrollValue) < 0.0005) {
+  if (isSnappingFromMenu && Math.abs(currentScrollValue - targetScrollValue) < 0.0002) {
     currentScrollValue = targetScrollValue; 
     isSnappingFromMenu = false; 
   }
