@@ -761,53 +761,11 @@ markers.forEach(marker => {
 function centerActiveSnapButton() {
   const activeButton = document.querySelector('.snap-btn.active');
   const menu = document.getElementById('snap-menu');
-  
-  if (activeButton && menu) {
-    const menuInner = document.getElementById('snap-menu-inner');
-    const buttons = Array.from(document.querySelectorAll('.snap-btn'));
-    const activeIndex = buttons.indexOf(activeButton);
-    
-    if (activeIndex === -1) return;
-    
-    // Calcola la posizione usando offsetLeft invece di getBoundingClientRect
-    let buttonOffsetLeft = 0;
-    for (let i = 0; i < activeIndex; i++) {
-      buttonOffsetLeft += buttons[i].offsetWidth + 15; // 15px è il gap
-    }
-    buttonOffsetLeft += activeButton.offsetWidth / 2; // Centro del bottone
-    
-    const menuWidth = menu.clientWidth;
-    const menuCenter = menuWidth / 2;
-    const targetScrollLeft = buttonOffsetLeft - menuCenter;
-    
-    // Assicurati che non vada oltre i limiti
-    const maxScroll = menuInner.scrollWidth - menuWidth;
-    const clampedScroll = Math.max(0, Math.min(targetScrollLeft, maxScroll));
-    
-    // Animazione smooth universale usando requestAnimationFrame
-    const startScroll = menu.scrollLeft;
-    const scrollDistance = clampedScroll - startScroll;
-    const duration = 300;
-    let startTime = null;
-    
-    function animate(currentTime) {
-      if (startTime === null) startTime = currentTime;
-      const timeElapsed = currentTime - startTime;
-      const progress = Math.min(timeElapsed / duration, 1);
-      
-      // Easing cubic-bezier(0.4, 0, 0.2, 1)
-      const easedProgress = progress < 0.5 
-        ? 2 * progress * progress 
-        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-      
-      menu.scrollLeft = startScroll + scrollDistance * easedProgress;
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    }
-    
-    requestAnimationFrame(animate);
+  if (activeButton) {
+    const menuRect = menu.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+    const offset = buttonRect.left - menuRect.left - (menuRect.width / 2) + (buttonRect.width / 2);
+    menu.scrollTo({ left: menu.scrollLeft + offset, behavior: 'smooth' });
   }
 }
 
