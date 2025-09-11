@@ -290,6 +290,32 @@
       color: #8f8f8f;
       font-family: Helvetica;
     }
+
+        /* Aggiungi queste regole CSS per personalizzare la barra di scorrimento */
+    .marker-modal .modal-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .marker-modal .modal-content::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+    }
+    
+    .marker-modal .modal-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .marker-modal .modal-content::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+    
+    /* Per Firefox */
+    .marker-modal .modal-content {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
+    }
         
 
   </style>
@@ -316,8 +342,9 @@
       <button class="snap-btn" data-snap="0.001">1. Cucina</button>
       <button class="snap-btn" data-snap="0.35">2. Salotto</button>
       <button class="snap-btn" data-snap="0.5">3. Sala</button>
-      <button class="snap-btn" data-snap="0.6">4. degwg</button>
-      <button class="snap-btn" data-snap="0.7">5. degwg</button>
+      <button class="snap-btn" data-snap="0.6">4. Ingresso</button>
+      <button class="snap-btn" data-snap="0.7">5. Bagno</button>
+      <button class="snap-btn" data-snap="0.808">6. Bagno</button>
 
     </div>
   </div>
@@ -533,9 +560,9 @@ const markers = [
     fullyVisible: 0,
     fadeOutStart: 0.05,
     fadeOutEnd: 0.051,
-    title: "BLACK DIAMOND",
+    title: "Bilbao Black",
     content: `
-      <p>Model No.18 è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
+      <p><i>Model No.18</i> è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
         delle funzioni base che solitamente determinano il design ergonomico di un divano, 
         ma hanno anche creato un modello multifunzionale da poter vivere nel massimo comfort, 
         dal riposo pomeridiano al lavoro, grazie agli angoli dalla forma morbida, alle dimensioni 
