@@ -132,7 +132,6 @@
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      display: flex;
       overflow-x: auto;
       scrollbar-width: none;
       -ms-overflow-style: none;
@@ -147,7 +146,7 @@
       transition: all 0.5s ease;
       max-width: 90%;
       justify-content: flex-start;
-    }
+    } 
     
     #snap-menu::-webkit-scrollbar {
       display: none;
@@ -291,6 +290,110 @@
       color: #8f8f8f;
       font-family: Helvetica;
     }
+
+        /* Aggiungi queste regole CSS per personalizzare la barra di scorrimento */
+    .marker-modal .modal-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .marker-modal .modal-content::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+    }
+    
+    .marker-modal .modal-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .marker-modal .modal-content::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+    
+    /* Per Firefox */
+    .marker-modal .modal-content {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
+    }
+
+    /* Configuratore 3D */
+/* Configuratore 3D - Versione con frecce */
+#configurator {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 25px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 90;
+  transition: all 0.5s ease;
+}
+
+.config-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.config-arrow:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transform: scale(1.1);
+}
+
+.config-arrow:active {
+  transform: scale(0.95);
+}
+
+.config-arrow img {
+  width: 60%;
+  height: 60%;
+  filter: invert(1);
+}
+
+.config-name {
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  min-width: 100px;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Per dispositivi mobili */
+@media (max-width: 991px) {
+  #configurator {
+    bottom: 90px;
+    padding: 10px 20px;
+    gap: 15px;
+  }
+  
+  .config-arrow {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .config-name {
+    font-size: 14px;
+    min-width: 80px;
+  }
+}
         
 
   </style>
@@ -317,11 +420,23 @@
       <button class="snap-btn" data-snap="0.001">1. Cucina</button>
       <button class="snap-btn" data-snap="0.35">2. Salotto</button>
       <button class="snap-btn" data-snap="0.5">3. Sala</button>
-      <button class="snap-btn" data-snap="0.6">4. degwg</button>
-      <button class="snap-btn" data-snap="0.7">5. degwg</button>
+      <button class="snap-btn" data-snap="0.6">4. Ingresso</button>
+      <button class="snap-btn" data-snap="0.7">5. Bagno</button>
+      <button class="snap-btn" data-snap="0.808">6. Bagno</button>
 
     </div>
   </div>
+
+<!-- Configuratore 3D - Versione con frecce -->
+<div id="configurator">
+  <div class="config-arrow" id="prev-model">
+    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xNS40MSA3LjQxTDE0IDZsLTYgNiA2IDYgMS40MS0xLjQxTDEwLjgzIDEyeiIvPjwvc3ZnPg==" alt="Precedente">
+  </div>
+  <div class="config-name" id="current-model-name">Cilindro</div>
+  <div class="config-arrow" id="next-model">
+    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMCA2TDggNy40MSAxMy4xNyAxMiA4IDE2LjU5IDEwIDE4bDYtNnoiLz48L3N2Zz4=" alt="Successivo">
+  </div>
+</div>
 
 <!-- MARKER UI -->
 <div id="marker1" class="marker" aria-label="Apri Dettagli 1" title="Apri Dettagli 1"><b>+</b></div>
@@ -395,7 +510,7 @@ let currentScrollValue = 0;
 const scrollSensitivity = isMobile ? 0.0004 : 0.0002;
 const smoothFactor = 0.009;
 
-const snapPoints = [0.001, 0.35, 0.5];
+const snapPoints = [0.001, 0.35, 0.5, 0.6];
 const snapThreshold = 0.02;
 
 let touchStartY = 0;
@@ -409,6 +524,14 @@ let isHoodAnimationReversing = false;
 
 const markerVisibilityState = {};
 let isSnappingFromMenu = false;
+
+// Configuratore - proprietà di visibilità
+const configuratorVisibility = {
+  fadeInStart: 0.58,
+  fullyVisible: 0.59,
+  fadeOutStart: 0.62,
+  fadeOutEnd: 0.63
+};
 
 // Loading progress
 function updateProgress(progress) {
@@ -464,6 +587,9 @@ loader.load("./assets/DEMO/camera_paths.glb", (gltf) => {
   dummyCamera = gltf.scene.getObjectByName("ff_empty");
   cameraPathLoaded = true;
   tryHideLoader();
+
+    // QUI - DOPO che camera_paths.glb è caricato, inizializza il configuratore
+  setTimeout(initConfigurator, 1000);
 });
 
 // Luci
@@ -525,11 +651,49 @@ window.addEventListener('touchmove', (event) => {
 window.addEventListener('touchend', () => { if (!isModalOpen) isScrolling = false; });
 document.addEventListener('touchmove', (e) => { if (e.target.tagName === 'CANVAS') e.preventDefault(); }, { passive: false });
 
-// Markers
+// === DEFINIZIONE DEI MARKER ===
 const markers = [
-  { id: "marker1", position: new THREE.Vector3(-8, 1.3, -5), fadeInStart: 0, fullyVisible: 0, fadeOutStart: 0.05, fadeOutEnd: 0.051, title: "BLACK DIAMOND", content: `<p>Testo marker 1...</p>` },
-  { id: "marker2", position: new THREE.Vector3(-7, 1.3, 4), fadeInStart: 0.28, fullyVisible: 0.281, fadeOutStart: 0.38, fadeOutEnd: 0.381, title: "DIVANO", content: `<p>Testo marker 2...</p>` },
+  {
+    id: "marker1",
+    position: new THREE.Vector3(-8, 1.3, -5),
+    fadeInStart: 0,
+    fullyVisible: 0,
+    fadeOutStart: 0.05,
+    fadeOutEnd: 0.051,
+    title: "Bilbao Black",
+    content: `
+      <p><i>Model No.18</i> è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
+        delle funzioni base che solitamente determinano il design ergonomico di un divano, 
+        ma hanno anche creato un modello multifunzionale da poter vivere nel massimo comfort, 
+        dal riposo pomeridiano al lavoro, grazie agli angoli dalla forma morbida, alle dimensioni 
+        ottimali del bracciolo e dello schienale e agli accessori.<br><br> Il peso del modello è stato progettato 
+        in modo tale che la stabilità non richieda il collegamento degli elementi, quindi in occasioni speciali, 
+        gli elementi possono essere riorganizzati quando si ricevono ospiti.</p>
+      <img src="./assets/DEMO/cucina.jpg" class="img-fluid shadow" alt="Immagine Marker 1">
+    `,
+  },
+  {
+    id: "marker2",
+    position: new THREE.Vector3(-7, 1.3, 4),
+    fadeInStart: 0.28,
+    fullyVisible: 0.281,
+    fadeOutStart: 0.38,
+    fadeOutEnd: 0.381,
+    title: "DIVANO",
+    content: `
+      <p>Model No.18 è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
+        delle funzioni base che solitamente determinano il design ergonomico di un divano, 
+        ma hanno anche creato un modello multifunzionale da poter vivere nel massimo comfort, 
+        dal riposo pomeridiano al lavoro, grazie agli angoli dalla forma morbida, alle dimensioni 
+        ottimali del bracciolo e dello schienale e agli accessori. Il peso del modello è stato progettato 
+        in modo tale che la stabilità non richieda il collegamento degli elementi, quindi in occasioni speciali, 
+        gli elementi possono essere riorganizzati quando si ricevono ospiti.</p>
+      <img src="./assets/DEMO/2.webp" class="img-fluid shadow" alt="Immagine Marker 1">
+        <p><br>Un ripiano posizionabile sullo schienale che funge da tavolino per la colazione o per el computer sulle ginocchia. Una vasta scelta di cuscini. Pouf individuali.</p>
+    `
+  },
 ];
+
 const markerModal = new bootstrap.Modal(document.getElementById('markerModal'));
 function showModal(title, content) {
   const targetFOV = Math.max(25, baseFOV - 5);
@@ -638,6 +802,121 @@ document.querySelectorAll('.snap-btn').forEach(button => {
   });
 });
 
+
+
+// Variabili per il configuratore
+let currentModel = null;
+let currentModelIndex = 0;
+const modelConfigs = [
+  { 
+    path: "./assets/DEMO/3D/cilindro.glb", 
+    name: "Cilindro"
+  },
+  { 
+    path: "./assets/DEMO/3D/sfera.glb", 
+    name: "Sfera"
+  },
+  { 
+    path: "./assets/DEMO/3D/cubo.glb", 
+    name: "Cubo"
+  }
+];
+
+// Funzione per caricare un modello nel configuratore
+function loadConfiguratorModel(modelIndex) {
+  // Rimuovi il modello precedente se esiste
+  if (currentModel) {
+    scene.remove(currentModel);
+    currentModel = null;
+  }
+  
+  const modelConfig = modelConfigs[modelIndex];
+  
+  // Carica il nuovo modello
+  loader.load(modelConfig.path, (gltf) => {
+    currentModel = gltf.scene;
+    
+    // MANTIENE LE COORDINATE ORIGINALI DI BLENDER
+    // Non applicare trasformazioni aggiuntive
+    
+    // Aggiungi il modello alla scena
+    scene.add(currentModel);
+    
+    // Aggiorna il nome del modello visualizzato
+    document.getElementById('current-model-name').textContent = modelConfig.name;
+    
+    // Aggiungi ombre al modello
+    currentModel.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+  });
+}
+
+// Funzione per cambiare modello (avanti/indietro)
+function changeModel(direction) {
+  currentModelIndex += direction;
+  
+  // Gestisci il ciclo dei modelli
+  if (currentModelIndex < 0) {
+    currentModelIndex = modelConfigs.length - 1;
+  } else if (currentModelIndex >= modelConfigs.length) {
+    currentModelIndex = 0;
+  }
+  
+  // Carica il nuovo modello
+  loadConfiguratorModel(currentModelIndex);
+}
+
+// Inizializza il configuratore
+function initConfigurator() {
+  // Aggiungi event listener per le frecce
+  document.getElementById('prev-model').addEventListener('click', () => {
+    changeModel(-1);
+  });
+  
+  document.getElementById('next-model').addEventListener('click', () => {
+    changeModel(1);
+  });
+  
+  // Carica il primo modello (cilindro) all'avvio
+  loadConfiguratorModel(0);
+}
+
+// Funzione per aggiornare la visibilità del configuratore in base allo scroll
+function updateConfiguratorVisibility() {
+  const configurator = document.getElementById('configurator');
+  let opacity = 0;
+  
+  if (currentScrollValue >= configuratorVisibility.fadeInStart && 
+      currentScrollValue <= configuratorVisibility.fullyVisible) {
+    // Fase di fade in
+    opacity = (currentScrollValue - configuratorVisibility.fadeInStart) / 
+              Math.max(0.000001, (configuratorVisibility.fullyVisible - configuratorVisibility.fadeInStart));
+  } 
+  else if (currentScrollValue > configuratorVisibility.fullyVisible && 
+           currentScrollValue < configuratorVisibility.fadeOutStart) {
+    // Completamente visibile
+    opacity = 1;
+  } 
+  else if (currentScrollValue >= configuratorVisibility.fadeOutStart && 
+           currentScrollValue <= configuratorVisibility.fadeOutEnd) {
+    // Fase di fade out
+    opacity = 1 - (currentScrollValue - configuratorVisibility.fadeOutStart) / 
+              Math.max(0.000001, (configuratorVisibility.fadeOutEnd - configuratorVisibility.fadeOutStart));
+  }
+  
+  // Applica l'opacità e disabilita l'interazione quando trasparente
+  configurator.style.opacity = opacity;
+  configurator.style.pointerEvents = (opacity > 0.6) ? 'auto' : 'none';
+}
+
+
+
+
+
 // Animate function - Versione migliorata
 function animate() {
   requestAnimationFrame(animate);
@@ -663,6 +942,7 @@ function animate() {
       }
     }
   }
+
   
   if (mixer && action) {
     let duration = action.getClip().duration;
@@ -686,6 +966,7 @@ function animate() {
   
   markers.forEach(updateMarker);
   updateSnapMenu();
+  updateConfiguratorVisibility(); // AGGIUNGI QUESTA RIGA
   renderer.render(scene, camera);
 }
 animate();
