@@ -120,14 +120,21 @@
       border-top: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    /* Menu snap points */
+    /* MODIFICA: Aggiunta regola per il contenitore interno dello snap menu */
+    #snap-menu-inner {
+      display: flex;
+      gap: 15px;
+      width: max-content;
+    }
+    
     #snap-menu {
       position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      display: flex;
-      gap: 15px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
       z-index: 100;
       padding: 10px 20px;
       background: rgba(255, 255, 255, 0.15);
@@ -136,15 +143,13 @@
       border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 50px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-      justify-content: center;
       transition: all 0.5s ease;
-      overflow-x: auto;
-      scrollbar-width: none; /* Firefox */
       max-width: 90%;
+      justify-content: flex-start;
     }
     
     #snap-menu::-webkit-scrollbar {
-      display: none; /* Chrome, Safari, Edge */
+      display: none;
     }
     
     .snap-btn {
@@ -306,11 +311,16 @@
 </div>
 
 <!-- Menu Snap Points -->
-<div id="snap-menu">
-  <button class="snap-btn" data-snap="0.001">1. Cucina</button>
-  <button class="snap-btn" data-snap="0.35">2. Salotto</button>
-  <button class="snap-btn" data-snap="0.5">3. Sala</button>
-</div>
+  <div id="snap-menu">
+    <div id="snap-menu-inner">
+      <button class="snap-btn" data-snap="0.001">1. Cucina</button>
+      <button class="snap-btn" data-snap="0.35">2. Salotto</button>
+      <button class="snap-btn" data-snap="0.5">3. Sala</button>
+      <button class="snap-btn" data-snap="0.6">4. degwg</button>
+      <button class="snap-btn" data-snap="0.7">5. degwg</button>
+
+    </div>
+  </div>
 
 <!-- MARKER UI -->
 <div id="marker1" class="marker" aria-label="Apri Dettagli 1" title="Apri Dettagli 1"><b>+</b></div>
@@ -368,7 +378,7 @@ document.body.appendChild(renderer.domElement);
 
 // Impostazioni per mobile
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-const baseFOV = isMobile ? 40 : 35; // FOV leggermente più ampio su mobile
+const baseFOV = isMobile ? 40 : 35;
 
 const camera = new THREE.PerspectiveCamera(baseFOV, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 1, 3);
@@ -381,58 +391,46 @@ loader.setDRACOLoader(dracoLoader);
 let mixer, action, dummyCamera;
 let targetScrollValue = 0;
 let currentScrollValue = 0;
-const scrollSensitivity = isMobile ? 0.0004 : 0.0002; // Sensibilità maggiore su mobile
+const scrollSensitivity = isMobile ? 0.0004 : 0.0002;
 const smoothFactor = 0.009;
 
-// SNAP POINTS
-const snapPoints = [0.001, 0.35, 0.5]; // valori normalizzati
+const snapPoints = [0.001, 0.35, 0.5];
 const snapThreshold = 0.02;
 
-// Variabili per il controllo del touch
 let touchStartY = 0;
 let isScrolling = false;
 
-// Variabili per l'animazione del marker1
 let hoodMixer = null;
 let hoodAction = null;
 let isHoodAnimationPlaying = false;
 let hoodAnimationDuration = 0;
 let isHoodAnimationReversing = false;
 
-// Variabile per tenere traccia dello stato dei marker (visibile/nascosto per click)
 const markerVisibilityState = {};
-
-// Variabile per distinguere scroll vs menu
 let isSnappingFromMenu = false;
 
-// Funzione per aggiornare la barra di progresso
+// Loading progress
 function updateProgress(progress) {
   const progressBar = document.querySelector('.progress-bar');
   progressBar.style.width = `${progress}%`;
 }
-
-// 🔹 Stato caricamento dei GLB
 let povLoaded = false;
 let cameraPathLoaded = false;
-
 function tryHideLoader() {
   if (povLoaded && cameraPathLoaded) {
     updateProgress(100);
     setTimeout(() => {
       document.getElementById('loading').style.display = 'none';
-      // Mostra la schermata START
       document.getElementById('startScreen').classList.add('show');
     }, 500);
   }
 }
-
 document.getElementById("startButton").addEventListener("click", () => {
   document.getElementById("startScreen").classList.remove("show");
-  // Avvia l'animazione
   animate();
 });
 
-// Carico la scena principale
+// Caricamenti
 loader.load("./assets/DEMO/ff_pov.glb", (gltf) => {
   scene.add(gltf.scene);
   gltf.scene.traverse((child) => {
@@ -441,8 +439,6 @@ loader.load("./assets/DEMO/ff_pov.glb", (gltf) => {
       child.receiveShadow = true;
     }
   });
-  
-  // Cerca l'animazione specifica per il marker1
   const hoodClip = THREE.AnimationClip.findByName(gltf.animations, "ff_split-001_hood-001Action");
   if (hoodClip) {
     hoodMixer = new THREE.AnimationMixer(gltf.scene);
@@ -450,17 +446,12 @@ loader.load("./assets/DEMO/ff_pov.glb", (gltf) => {
     hoodAnimationDuration = hoodClip.duration;
     hoodAction.setLoop(THREE.LoopOnce);
     hoodAction.clampWhenFinished = true;
-    hoodAction.paused = true; // Inizia in pausa
+    hoodAction.paused = true;
   }
-  
   updateProgress(50);
   povLoaded = true;
   tryHideLoader();
-}, undefined, (error) => {
-  console.error("Errore nel caricamento del modello:", error);
 });
-
-// Carico il percorso camera
 loader.load("./assets/DEMO/camera_paths.glb", (gltf) => {
   scene.add(gltf.scene);
   mixer = new THREE.AnimationMixer(gltf.scene);
@@ -472,11 +463,9 @@ loader.load("./assets/DEMO/camera_paths.glb", (gltf) => {
   dummyCamera = gltf.scene.getObjectByName("ff_empty");
   cameraPathLoaded = true;
   tryHideLoader();
-}, undefined, (error) => {
-  console.error("Errore nel caricamento del percorso camera:", error);
 });
 
-// LUCI
+// Luci
 scene.add(new THREE.AmbientLight(0xffffff, 2));
 const fillLight = new THREE.DirectionalLight(0xffffff, 1);
 fillLight.position.set(-5, 5, -5);
@@ -487,87 +476,53 @@ scene.add(rimLight);
 
 let isModalOpen = false;
 let currentMarkerId = null;
-
-// Quando la modale si apre
 document.getElementById('markerModal').addEventListener('show.bs.modal', () => {
   isModalOpen = true;
 });
-
-// Quando la modale si chiude
 document.getElementById('markerModal').addEventListener('hidden.bs.modal', () => {
   isModalOpen = false;
-  
-  // Ripristina la visibilità del marker con un fade in
   if (currentMarkerId) {
     const markerElement = document.getElementById(currentMarkerId);
     markerVisibilityState[currentMarkerId] = true;
-    
-    // Forza un aggiornamento della posizione del marker
     const markerData = markers.find(m => m.id === currentMarkerId);
-    if (markerData) {
-      updateMarker(markerData);
-    }
-    
-    // Animazione di fade in
-    gsap.fromTo(markerElement,
-      { opacity: 0 },
-      { opacity: 1, duration: 0.5, ease: "power1.out" }
-    );
+    if (markerData) updateMarker(markerData);
+    gsap.fromTo(markerElement,{ opacity: 0 },{ opacity: 1, duration: 0.5, ease: "power1.out" });
   }
-  
-  // Se l'animazione del marker1 è attiva, farla andare in reverse
   if (currentMarkerId === "marker1" && hoodAction && isHoodAnimationPlaying) {
     isHoodAnimationReversing = true;
     hoodAction.paused = false;
     hoodAction.timeScale = -1;
     hoodAction.play();
   }
-  
   currentMarkerId = null;
 });
 
-// CONTROLLO SCROLL - Mouse
+// Scroll
 window.addEventListener("wheel", (event) => {
-  if (isModalOpen) return; // blocca il controllo camera se la modale è aperta
-
+  if (isModalOpen) return;
   const isMouseScroll = Math.abs(event.deltaY) % 120 === 0;
   const sensitivity = isMouseScroll ? scrollSensitivity * 0.5 : scrollSensitivity;
   targetScrollValue += event.deltaY * sensitivity;
   targetScrollValue = Math.max(0, Math.min(1, targetScrollValue));
   event.preventDefault();
 }, { passive: false });
-
-// CONTROLLO SCROLL - Touch
 window.addEventListener('touchstart', (event) => {
   if (isModalOpen) return; 
   touchStartY = event.touches[0].clientY;
   isScrolling = true;
 }, { passive: true });
-
 window.addEventListener('touchmove', (event) => {
   if (isModalOpen) return;
   if (!isScrolling) return;
-
   const touchY = event.touches[0].clientY;
   const deltaY = touchStartY - touchY;
   touchStartY = touchY;
-
   targetScrollValue += deltaY * scrollSensitivity * 2;
   targetScrollValue = Math.max(0, Math.min(1, targetScrollValue));
-
   event.preventDefault();
 }, { passive: false });
-
-window.addEventListener('touchend', () => {
-  if (isModalOpen) return;
-  isScrolling = false;
-});
-
-// Prevenire il comportamento di scroll nativo
-document.addEventListener('touchmove', (e) => {
-  if (e.target.tagName !== 'CANVAS') return;
-  e.preventDefault();
-}, { passive: false });
+window.addEventListener('touchend', () => { if (!isModalOpen) isScrolling = false; });
+document.addEventListener('touchmove', (e) => { if (e.target.tagName === 'CANVAS') e.preventDefault(); }, { passive: false });
 
 // === DEFINIZIONE DEI MARKER ===
 const markers = [
@@ -580,16 +535,15 @@ const markers = [
     fadeOutEnd: 0.051,
     title: "BLACK DIAMOND",
     content: `
-      <p>I momenti di socialità e incontro, sia per motivi professionali che personali, sono sempre più frequenti e per questo si è esigenti nei confronti degli spazi ospitanti. Gli si chiede di essere accoglienti, eleganti, funzionali. Ecco allora che la scelta di un materiale come Black Diamond diventa fondamentale per la definizione degli stessi. 
-        <br><br>Ricercatezza e carattere sembrano le parole chiave per creare la base su cui inserire complementi confortevoli e originali al tempo stesso, in modo da regalare un senso di intimità quasi domestico.</p>
-      <img src="./assets/DEMO/3.jpg" class="img-fluid shadow" alt="Immagine Marker 1">
-      <p><br>Model No.18 è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
+      <p>Model No.18 è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
         delle funzioni base che solitamente determinano il design ergonomico di un divano, 
         ma hanno anche creato un modello multifunzionale da poter vivere nel massimo comfort, 
         dal riposo pomeridiano al lavoro, grazie agli angoli dalla forma morbida, alle dimensioni 
-        ottimali del bracciolo e dello schienale e agli accessori.</p>
-
-    `
+        ottimali del bracciolo e dello schienale e agli accessori.<br><br> Il peso del modello è stato progettato 
+        in modo tale che la stabilità non richieda il collegamento degli elementi, quindi in occasioni speciali, 
+        gli elementi possono essere riorganizzati quando si ricevono ospiti.</p>
+      <img src="./assets/DEMO/cucina.jpg" class="img-fluid shadow" alt="Immagine Marker 1">
+    `,
   },
   {
     id: "marker2",
@@ -613,116 +567,64 @@ const markers = [
   },
 ];
 
-// Inizializza la modale di Bootstrap
 const markerModal = new bootstrap.Modal(document.getElementById('markerModal'));
-
-// Funzione per mostrare la modale
 function showModal(title, content) {
   const targetFOV = Math.max(25, baseFOV - 5);
-  gsap.to(camera, { 
-    fov: targetFOV, 
-    duration: 0.8, 
-    ease: "power2.inOut", 
-    onUpdate: () => camera.updateProjectionMatrix() 
-  });
-  
+  gsap.to(camera,{ fov: targetFOV,duration: 0.8,ease: "power2.inOut",onUpdate: () => camera.updateProjectionMatrix() });
   document.getElementById('markerModalLabel').textContent = title;
   const modalBody = document.querySelector('.modal-body');
   modalBody.innerHTML = content;
-  
-  const children = modalBody.children;
-  gsap.set(children, { opacity: 0, y: 20 });
-  
+  gsap.set(modalBody.children,{ opacity: 0, y: 20 });
   markerModal.show();
-  
-  const tl = gsap.timeline({ delay: 0.2 });
-  tl.to(children, {
-    opacity: 1,
-    y: 0,
-    duration: 0.4,
-    stagger: 0.2,
-    ease: "power2.out"
-  });
-  
-  document.getElementById('markerModal').addEventListener('hidden.bs.modal', function () {
-    gsap.to(camera, { 
-      fov: baseFOV, 
-      duration: 0.8, 
-      ease: "power2.inOut", 
-      onUpdate: () => camera.updateProjectionMatrix() 
-    });
+  gsap.timeline({ delay: 0.2 }).to(modalBody.children,{ opacity: 1,y: 0,duration: 0.4,stagger: 0.2,ease: "power2.out" });
+  document.getElementById('markerModal').addEventListener('hidden.bs.modal', () => {
+    gsap.to(camera,{ fov: baseFOV,duration: 0.8,ease: "power2.inOut",onUpdate: () => camera.updateProjectionMatrix() });
   }, {once: true});
 }
-
-// Funzione per aggiornare un singolo marker
 function updateMarker(markerData) {
   const markerElement = document.getElementById(markerData.id);
-
   if (markerVisibilityState[markerData.id] === false) {
     markerElement.style.opacity = 0;
     markerElement.style.pointerEvents = "none";
     return;
   }
-
   let opacity = 0;
   if (currentScrollValue >= markerData.fadeInStart && currentScrollValue <= markerData.fullyVisible) {
-    opacity = (currentScrollValue - markerData.fadeInStart) / Math.max(0.000001, (markerData.fullyVisible - markerData.fadeInStart));
+    opacity = (currentScrollValue - markerData.fadeInStart) / Math.max(0.000001,(markerData.fullyVisible - markerData.fadeInStart));
   } else if (currentScrollValue > markerData.fullyVisible && currentScrollValue < markerData.fadeOutStart) {
     opacity = 1;
   } else if (currentScrollValue >= markerData.fadeOutStart && currentScrollValue <= markerData.fadeOutEnd) {
-    opacity = 1 - (currentScrollValue - markerData.fadeOutStart) / Math.max(0.000001, (markerData.fadeOutEnd - markerData.fadeOutStart));
+    opacity = 1 - (currentScrollValue - markerData.fadeOutStart) / Math.max(0.000001,(markerData.fadeOutEnd - markerData.fadeOutStart));
   }
-
   const vector = markerData.position.clone();
   vector.project(camera);
   const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
   const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
   markerElement.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
-
   const inViewport = (vector.z < 1 && vector.x > -1 && vector.x < 1 && vector.y > -1 && vector.y < 1);
   markerElement.style.opacity = inViewport ? opacity : 0;
   markerElement.style.pointerEvents = (inViewport && opacity > 0.6) ? "auto" : "none";
 }
-
-// Click handler per i marker
 markers.forEach(marker => {
   const markerElement = document.getElementById(marker.id);
   markerVisibilityState[marker.id] = true;
-  
   markerElement.addEventListener("click", () => {
-    gsap.to(markerElement, {
-      opacity: 0,
-      duration: 0.3,
-      ease: "power1.out",
-      onComplete: () => {
-        markerVisibilityState[marker.id] = false;
-      }
-    });
-
-    gsap.fromTo(markerElement, 
-      { scale: 1 }, 
-      { scale: 0.92, duration: 0.08, yoyo: true, repeat: 1, ease: "power1.inOut" }
-    );
-
+    gsap.to(markerElement,{ opacity: 0,duration: 0.3,ease: "power1.out",onComplete: () => { markerVisibilityState[marker.id] = false; } });
+    gsap.fromTo(markerElement,{ scale: 1 },{ scale: 0.92,duration: 0.08,yoyo: true,repeat: 1,ease: "power1.inOut" });
     if (marker.id === "marker1" && hoodAction) {
-      hoodAction.reset();
-      hoodAction.timeScale = 1;
-      hoodAction.paused = false;
-      hoodAction.play();
-      isHoodAnimationPlaying = true;
-      isHoodAnimationReversing = false;
+      hoodAction.reset();hoodAction.timeScale = 1;hoodAction.paused = false;hoodAction.play();
+      isHoodAnimationPlaying = true;isHoodAnimationReversing = false;
     }
-
     currentMarkerId = marker.id;
     showModal(marker.title, marker.content);
   });
 });
 
-// Funzione per centrare il pulsante attivo
+// Slider snap menu
+// Slider snap menu - Versione migliorata
 function centerActiveSnapButton() {
   const activeButton = document.querySelector('.snap-btn.active');
   const menu = document.getElementById('snap-menu');
-  
   if (activeButton) {
     const menuRect = menu.getBoundingClientRect();
     const buttonRect = activeButton.getBoundingClientRect();
@@ -731,11 +633,9 @@ function centerActiveSnapButton() {
   }
 }
 
-// Aggiorna il menu snap
 function updateSnapMenu() {
   const buttons = document.querySelectorAll('.snap-btn');
   let activeFound = false;
-  
   buttons.forEach(button => {
     const snapValue = parseFloat(button.dataset.snap);
     const isActive = Math.abs(currentScrollValue - snapValue) < snapThreshold;
@@ -746,46 +646,61 @@ function updateSnapMenu() {
       button.classList.remove('active');
     }
   });
-  
-  if (activeFound) {
-    setTimeout(centerActiveSnapButton, 50);
-  }
+  if (activeFound) centerActiveSnapButton();
 }
 
-// Event listener per pulsanti snap
+// Gestione click sugli snap button - Versione migliorata
 document.querySelectorAll('.snap-btn').forEach(button => {
   button.addEventListener('click', () => {
     const snapValue = parseFloat(button.dataset.snap);
-    targetScrollValue = snapValue;
-    isSnappingFromMenu = true; // 🔹 segno che arrivo da menu
     
-    button.classList.add('active');
-    setTimeout(centerActiveSnapButton, 50);
+    // Animazione smooth verso lo snap point
+    gsap.to({}, {
+      duration: 1.2, // Durata dell'animazione
+      ease: "power2.inOut",
+      onStart: () => {
+        isSnappingFromMenu = true;
+        targetScrollValue = snapValue;
+        document.querySelectorAll('.snap-btn').forEach(b => b.classList.remove('active'));
+        button.classList.add('active');
+        centerActiveSnapButton();
+      },
+      onUpdate: () => {
+        // Forza l'aggiornamento durante l'animazione
+      },
+      onComplete: () => {
+        isSnappingFromMenu = false;
+      }
+    });
   });
 });
 
-// ANIMATE
+// Animate function - Versione migliorata
 function animate() {
   requestAnimationFrame(animate);
-
-  const diff = targetScrollValue - currentScrollValue;
-  currentScrollValue += diff * smoothFactor;
-
-  // Snap logic SOLO se non arrivo da menu
-  if (!isSnappingFromMenu) {
+  
+  if (isSnappingFromMenu) {
+    // Animazione smooth verso lo snap point selezionato dal menu
+    const diff = targetScrollValue - currentScrollValue;
+    currentScrollValue += diff * 0.01; // Fattore di smoothing aumentato
+    
+    // Se siamo molto vicini al target, considera il movimento completato
+    if (Math.abs(diff) < 0.0005) {
+      currentScrollValue = targetScrollValue;
+    }
+  } else {
+    // Comportamento originale per lo scroll normale
+    const diff = targetScrollValue - currentScrollValue;
+    currentScrollValue += diff * smoothFactor;
+    
+    // Snap naturale durante lo scrolling
     for (let snap of snapPoints) {
       if (Math.abs(currentScrollValue - snap) < snapThreshold) {
         targetScrollValue = THREE.MathUtils.lerp(targetScrollValue, snap, 0.02);
       }
     }
   }
-
-  // Se arrivo da menu ed ho praticamente raggiunto la destinazione
-  if (isSnappingFromMenu && Math.abs(currentScrollValue - targetScrollValue) < 0.0002) {
-    currentScrollValue = targetScrollValue; 
-    isSnappingFromMenu = false; 
-  }
-
+  
   if (mixer && action) {
     let duration = action.getClip().duration;
     mixer.setTime(currentScrollValue * duration);
@@ -798,16 +713,14 @@ function animate() {
   if (hoodMixer) {
     const delta = 0.016;
     hoodMixer.update(delta);
-    if (isHoodAnimationPlaying && !isHoodAnimationReversing && hoodAction.time >= hoodAnimationDuration) {
-      hoodAction.paused = true;
-    }
+    if (isHoodAnimationPlaying && !isHoodAnimationReversing && hoodAction.time >= hoodAnimationDuration) hoodAction.paused = true;
     if (isHoodAnimationReversing && hoodAction.time <= 0) {
       hoodAction.paused = true;
       isHoodAnimationPlaying = false;
       isHoodAnimationReversing = false;
     }
   }
-
+  
   markers.forEach(updateMarker);
   updateSnapMenu();
   renderer.render(scene, camera);
@@ -820,21 +733,15 @@ window.addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-// Previeni doppio tap zoom
 let lastTap = 0;
 document.addEventListener('touchend', function(event) {
   const currentTime = new Date().getTime();
-  const tapLength = currentTime - lastTap;
-  if (tapLength < 300 && tapLength > 0) {
-    event.preventDefault();
-  }
+  if (currentTime - lastTap < 300 && currentTime - lastTap > 0) event.preventDefault();
   lastTap = currentTime;
 }, false);
-
-// Previeni menu contestuale
 document.addEventListener('contextmenu', event => event.preventDefault());
 </script>
+
 
 </body>
 </html>
