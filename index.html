@@ -510,7 +510,7 @@ let currentScrollValue = 0;
 const scrollSensitivity = isMobile ? 0.0004 : 0.0002;
 const smoothFactor = 0.009;
 
-const snapPoints = [0.001, 0.35, 0.5];
+const snapPoints = [0.001, 0.35, 0.5, 0.6];
 const snapThreshold = 0.02;
 
 let touchStartY = 0;
@@ -524,6 +524,14 @@ let isHoodAnimationReversing = false;
 
 const markerVisibilityState = {};
 let isSnappingFromMenu = false;
+
+// Configuratore - proprietà di visibilità
+const configuratorVisibility = {
+  fadeInStart: 0.58,
+  fullyVisible: 0.59,
+  fadeOutStart: 0.62,
+  fadeOutEnd: 0.63
+};
 
 // Loading progress
 function updateProgress(progress) {
@@ -877,6 +885,34 @@ function initConfigurator() {
   loadConfiguratorModel(0);
 }
 
+// Funzione per aggiornare la visibilità del configuratore in base allo scroll
+function updateConfiguratorVisibility() {
+  const configurator = document.getElementById('configurator');
+  let opacity = 0;
+  
+  if (currentScrollValue >= configuratorVisibility.fadeInStart && 
+      currentScrollValue <= configuratorVisibility.fullyVisible) {
+    // Fase di fade in
+    opacity = (currentScrollValue - configuratorVisibility.fadeInStart) / 
+              Math.max(0.000001, (configuratorVisibility.fullyVisible - configuratorVisibility.fadeInStart));
+  } 
+  else if (currentScrollValue > configuratorVisibility.fullyVisible && 
+           currentScrollValue < configuratorVisibility.fadeOutStart) {
+    // Completamente visibile
+    opacity = 1;
+  } 
+  else if (currentScrollValue >= configuratorVisibility.fadeOutStart && 
+           currentScrollValue <= configuratorVisibility.fadeOutEnd) {
+    // Fase di fade out
+    opacity = 1 - (currentScrollValue - configuratorVisibility.fadeOutStart) / 
+              Math.max(0.000001, (configuratorVisibility.fadeOutEnd - configuratorVisibility.fadeOutStart));
+  }
+  
+  // Applica l'opacità e disabilita l'interazione quando trasparente
+  configurator.style.opacity = opacity;
+  configurator.style.pointerEvents = (opacity > 0.6) ? 'auto' : 'none';
+}
+
 
 
 
@@ -930,6 +966,7 @@ function animate() {
   
   markers.forEach(updateMarker);
   updateSnapMenu();
+  updateConfiguratorVisibility(); // AGGIUNGI QUESTA RIGA
   renderer.render(scene, camera);
 }
 animate();
