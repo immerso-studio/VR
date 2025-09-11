@@ -125,6 +125,8 @@
       display: flex;
       gap: 15px;
       width: max-content;
+      align-items: center; /* Aggiungi questo */
+      min-width: 100%; /* Assicura la larghezza minima */
     }
     
     #snap-menu {
@@ -146,6 +148,10 @@
       transition: all 0.5s ease;
       max-width: 90%;
       justify-content: flex-start;
+        /* Aggiungi queste proprietà per iOS */
+      -webkit-overflow-scrolling: touch;
+      overflow-y: hidden; /* Importante per iOS */
+      white-space: nowrap;
     } 
     
     #snap-menu::-webkit-scrollbar {
@@ -164,6 +170,9 @@
       flex-shrink: 0;
       filter: blur(1.5px);
       opacity: 0.7;
+        /* Aggiungi queste proprietà */
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
     }
     
     .snap-btn.active {
@@ -752,11 +761,48 @@ markers.forEach(marker => {
 function centerActiveSnapButton() {
   const activeButton = document.querySelector('.snap-btn.active');
   const menu = document.getElementById('snap-menu');
-  if (activeButton) {
-    const menuRect = menu.getBoundingClientRect();
-    const buttonRect = activeButton.getBoundingClientRect();
-    const offset = buttonRect.left - menuRect.left - (menuRect.width / 2) + (buttonRect.width / 2);
-    menu.scrollTo({ left: menu.scrollLeft + offset, behavior: 'smooth' });
+  
+  if (activeButton && menu) {
+    // Usa setTimeout per iOS
+    setTimeout(() => {
+      const menuRect = menu.getBoundingClientRect();
+      const buttonRect = activeButton.getBoundingClientRect();
+      
+      const menuCenter = menuRect.width / 2;
+      const buttonCenter = buttonRect.left - menuRect.left + (buttonRect.width / 2);
+      const scrollOffset = buttonCenter - menuCenter;
+      const newScrollLeft = menu.scrollLeft + scrollOffset;
+      
+      // Controllo per supporto scrollBehavior
+      if ('scrollBehavior' in document.documentElement.style) {
+        menu.scrollTo({ 
+          left: newScrollLeft, 
+          behavior: 'smooth' 
+        });
+      } else {
+        // Fallback animato per Safari più vecchi
+        const start = menu.scrollLeft;
+        const change = newScrollLeft - start;
+        const duration = 300;
+        let startTime = null;
+        
+        function animateScroll(timestamp) {
+          if (!startTime) startTime = timestamp;
+          const progress = Math.min((timestamp - startTime) / duration, 1);
+          const easeInOut = progress < 0.5 
+            ? 2 * progress * progress 
+            : -1 + (4 - 2 * progress) * progress;
+          
+          menu.scrollLeft = start + change * easeInOut;
+          
+          if (progress < 1) {
+            requestAnimationFrame(animateScroll);
+          }
+        }
+        
+        requestAnimationFrame(animateScroll);
+      }
+    }, 10);
   }
 }
 
