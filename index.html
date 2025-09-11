@@ -748,17 +748,17 @@ markers.forEach(marker => {
 });
 
 // Slider snap menu
-// Slider snap menu - Versione migliorata
 function centerActiveSnapButton() {
   const activeButton = document.querySelector('.snap-btn.active');
   const menu = document.getElementById('snap-menu');
   if (activeButton) {
-    const menuRect = menu.getBoundingClientRect();
-    const buttonRect = activeButton.getBoundingClientRect();
-    const offset = buttonRect.left - menuRect.left - (menuRect.width / 2) + (buttonRect.width / 2);
-    menu.scrollTo({ left: menu.scrollLeft + offset, behavior: 'smooth' });
+    const offset = activeButton.offsetLeft 
+                 - (menu.clientWidth / 2) 
+                 + (activeButton.offsetWidth / 2);
+    menu.scrollTo({ left: offset, behavior: 'smooth' });
   }
 }
+
 
 function updateSnapMenu() {
   const buttons = document.querySelectorAll('.snap-btn');
