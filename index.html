@@ -316,6 +316,84 @@
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
     }
+
+    /* Configuratore 3D */
+/* Configuratore 3D - Versione con frecce */
+#configurator {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 25px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 90;
+  transition: all 0.5s ease;
+}
+
+.config-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.config-arrow:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transform: scale(1.1);
+}
+
+.config-arrow:active {
+  transform: scale(0.95);
+}
+
+.config-arrow img {
+  width: 60%;
+  height: 60%;
+  filter: invert(1);
+}
+
+.config-name {
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  min-width: 100px;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Per dispositivi mobili */
+@media (max-width: 991px) {
+  #configurator {
+    bottom: 90px;
+    padding: 10px 20px;
+    gap: 15px;
+  }
+  
+  .config-arrow {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .config-name {
+    font-size: 14px;
+    min-width: 80px;
+  }
+}
         
 
   </style>
@@ -348,6 +426,17 @@
 
     </div>
   </div>
+
+<!-- Configuratore 3D - Versione con frecce -->
+<div id="configurator">
+  <div class="config-arrow" id="prev-model">
+    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xNS40MSA3LjQxTDE0IDZsLTYgNiA2IDYgMS40MS0xLjQxTDEwLjgzIDEyeiIvPjwvc3ZnPg==" alt="Precedente">
+  </div>
+  <div class="config-name" id="current-model-name">Cilindro</div>
+  <div class="config-arrow" id="next-model">
+    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMCA2TDggNy40MSAxMy4xNyAxMiA4IDE2LjU5IDEwIDE4bDYtNnoiLz48L3N2Zz4=" alt="Successivo">
+  </div>
+</div>
 
 <!-- MARKER UI -->
 <div id="marker1" class="marker" aria-label="Apri Dettagli 1" title="Apri Dettagli 1"><b>+</b></div>
@@ -490,6 +579,9 @@ loader.load("./assets/DEMO/camera_paths.glb", (gltf) => {
   dummyCamera = gltf.scene.getObjectByName("ff_empty");
   cameraPathLoaded = true;
   tryHideLoader();
+
+    // QUI - DOPO che camera_paths.glb è caricato, inizializza il configuratore
+  setTimeout(initConfigurator, 1000);
 });
 
 // Luci
@@ -702,6 +794,93 @@ document.querySelectorAll('.snap-btn').forEach(button => {
   });
 });
 
+
+
+// Variabili per il configuratore
+let currentModel = null;
+let currentModelIndex = 0;
+const modelConfigs = [
+  { 
+    path: "./assets/DEMO/3D/cilindro.glb", 
+    name: "Cilindro"
+  },
+  { 
+    path: "./assets/DEMO/3D/sfera.glb", 
+    name: "Sfera"
+  },
+  { 
+    path: "./assets/DEMO/3D/cubo.glb", 
+    name: "Cubo"
+  }
+];
+
+// Funzione per caricare un modello nel configuratore
+function loadConfiguratorModel(modelIndex) {
+  // Rimuovi il modello precedente se esiste
+  if (currentModel) {
+    scene.remove(currentModel);
+    currentModel = null;
+  }
+  
+  const modelConfig = modelConfigs[modelIndex];
+  
+  // Carica il nuovo modello
+  loader.load(modelConfig.path, (gltf) => {
+    currentModel = gltf.scene;
+    
+    // MANTIENE LE COORDINATE ORIGINALI DI BLENDER
+    // Non applicare trasformazioni aggiuntive
+    
+    // Aggiungi il modello alla scena
+    scene.add(currentModel);
+    
+    // Aggiorna il nome del modello visualizzato
+    document.getElementById('current-model-name').textContent = modelConfig.name;
+    
+    // Aggiungi ombre al modello
+    currentModel.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+  });
+}
+
+// Funzione per cambiare modello (avanti/indietro)
+function changeModel(direction) {
+  currentModelIndex += direction;
+  
+  // Gestisci il ciclo dei modelli
+  if (currentModelIndex < 0) {
+    currentModelIndex = modelConfigs.length - 1;
+  } else if (currentModelIndex >= modelConfigs.length) {
+    currentModelIndex = 0;
+  }
+  
+  // Carica il nuovo modello
+  loadConfiguratorModel(currentModelIndex);
+}
+
+// Inizializza il configuratore
+function initConfigurator() {
+  // Aggiungi event listener per le frecce
+  document.getElementById('prev-model').addEventListener('click', () => {
+    changeModel(-1);
+  });
+  
+  document.getElementById('next-model').addEventListener('click', () => {
+    changeModel(1);
+  });
+  
+  // Carica il primo modello (cilindro) all'avvio
+  loadConfiguratorModel(0);
+}
+
+
+
+
+
 // Animate function - Versione migliorata
 function animate() {
   requestAnimationFrame(animate);
@@ -727,6 +906,7 @@ function animate() {
       }
     }
   }
+
   
   if (mixer && action) {
     let duration = action.getClip().duration;
