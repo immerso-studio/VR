@@ -763,11 +763,28 @@ markers.forEach(marker => {
 function centerActiveSnapButton() {
   const activeButton = document.querySelector('.snap-btn.active');
   const menu = document.getElementById('snap-menu');
+  const menuInner = document.getElementById('snap-menu-inner');
+  
   if (activeButton) {
     const menuRect = menu.getBoundingClientRect();
     const buttonRect = activeButton.getBoundingClientRect();
+    const menuInnerRect = menuInner.getBoundingClientRect();
+    
+    // Calcola l'offset per centrare il bottone
     const offset = buttonRect.left - menuRect.left - (menuRect.width / 2) + (buttonRect.width / 2);
-    menu.scrollTo({ left: menu.scrollLeft + offset, behavior: 'smooth' });
+    
+    // Per iOS, usa una transizione più fluida
+    menu.scrollTo({
+      left: menu.scrollLeft + offset,
+      behavior: 'smooth'
+    });
+    
+    // Fallback per iOS che potrebbe non supportare bene 'smooth'
+    setTimeout(() => {
+      if (menu.scrollLeft !== menu.scrollLeft + offset) {
+        menu.scrollLeft = menu.scrollLeft + offset;
+      }
+    }, 100);
   }
 }
 
@@ -787,27 +804,41 @@ function updateSnapMenu() {
   if (activeFound) centerActiveSnapButton();
 }
 
-// Gestione click sugli snap button - Versione migliorata
+// Aggiungi questo all'inizio del tuo script per rilevare iOS
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+// Modifica l'event listener per i snap buttons per iOS
 document.querySelectorAll('.snap-btn').forEach(button => {
   button.addEventListener('click', () => {
     const snapValue = parseFloat(button.dataset.snap);
     
-    // Animazione smooth verso lo snap point
+    // Per iOS, aggiungi un piccolo timeout per garantire che il rendering sia completato
+    if (isIOS) {
+      setTimeout(() => {
+        centerActiveSnapButton();
+      }, 50);
+    }
+    
     gsap.to({}, {
-      duration: 1.2, // Durata dell'animazione
+      duration: 1.2,
       ease: "power2.inOut",
       onStart: () => {
         isSnappingFromMenu = true;
         targetScrollValue = snapValue;
         document.querySelectorAll('.snap-btn').forEach(b => b.classList.remove('active'));
         button.classList.add('active');
-        centerActiveSnapButton();
-      },
-      onUpdate: () => {
-        // Forza l'aggiornamento durante l'animazione
+        
+        // Centra immediatamente per iOS
+        if (isIOS) {
+          centerActiveSnapButton();
+        }
       },
       onComplete: () => {
         isSnappingFromMenu = false;
+        // Forza un nuovo centramento al completamento per iOS
+        if (isIOS) {
+          setTimeout(() => centerActiveSnapButton(), 100);
+        }
       }
     });
   });
