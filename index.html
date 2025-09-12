@@ -125,8 +125,11 @@
       display: flex;
       gap: 15px;
       width: max-content;
-      align-items: center; /* Aggiungi questo */
-      min-width: 100%; /* Assicura la larghezza minima */
+      align-items: center;
+      min-width: 100%;
+      /* AGGIUNTE CRITICHE PER iOS */
+      flex-shrink: 0;
+      will-change: transform; /* Ottimizzazione per iOS */
     }
     
     #snap-menu {
@@ -148,10 +151,13 @@
       transition: all 0.5s ease;
       max-width: 90%;
       justify-content: flex-start;
-        /* Aggiungi queste proprietà per iOS */
+      /* FIX PER iOS - Proprietà critiche per Safari */
       -webkit-overflow-scrolling: touch;
-      overflow-y: hidden; /* Importante per iOS */
+      overflow-y: hidden;
       white-space: nowrap;
+      /* AGGIUNTE PER iOS */
+      scroll-behavior: auto; /* Importante per iOS */
+      -webkit-scroll-behavior: auto;
     } 
     
     #snap-menu::-webkit-scrollbar {
@@ -373,7 +379,6 @@
 .config-arrow img {
   width: 60%;
   height: 60%;
-  filter: invert(1);
 }
 
 .config-name {
@@ -761,11 +766,53 @@ markers.forEach(marker => {
 function centerActiveSnapButton() {
   const activeButton = document.querySelector('.snap-btn.active');
   const menu = document.getElementById('snap-menu');
-  if (activeButton) {
-    const menuRect = menu.getBoundingClientRect();
-    const buttonRect = activeButton.getBoundingClientRect();
-    const offset = buttonRect.left - menuRect.left - (menuRect.width / 2) + (buttonRect.width / 2);
-    menu.scrollTo({ left: menu.scrollLeft + offset, behavior: 'smooth' });
+  
+  if (activeButton && menu) {
+    // APPROCCIO SPECIFICO PER iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    if (isIOS) {
+      // Metodo specifico per iOS
+      setTimeout(() => {
+        const menuRect = menu.getBoundingClientRect();
+        const buttonRect = activeButton.getBoundingClientRect();
+        
+        // Calcola l'offset dal bordo sinistro del menu
+        const menuScrollLeft = menu.scrollLeft;
+        const buttonOffsetLeft = activeButton.offsetLeft;
+        const menuWidth = menuRect.width;
+        const buttonWidth = buttonRect.width;
+        
+        // Calcola la posizione target per centrare il button
+        const targetScrollLeft = buttonOffsetLeft - (menuWidth / 2) + (buttonWidth / 2);
+        
+        // Su iOS, usa scrollTo senza behavior smooth inizialmente
+        menu.scrollTo({
+          left: Math.max(0, targetScrollLeft),
+          behavior: 'auto' // Inizia senza smooth
+        });
+        
+        // Poi applica un secondo scrollTo con smooth dopo un breve delay
+        setTimeout(() => {
+          menu.scrollTo({
+            left: Math.max(0, targetScrollLeft),
+            behavior: 'smooth'
+          });
+        }, 10);
+        
+      }, 50); // Delay maggiore per iOS
+      
+    } else {
+      // Metodo originale per altri browser
+      const menuRect = menu.getBoundingClientRect();
+      const buttonRect = activeButton.getBoundingClientRect();
+      const offset = buttonRect.left - menuRect.left - (menuRect.width / 2) + (buttonRect.width / 2);
+      
+      menu.scrollTo({ 
+        left: menu.scrollLeft + offset, 
+        behavior: 'smooth' 
+      });
+    }
   }
 }
 
@@ -790,19 +837,27 @@ document.querySelectorAll('.snap-btn').forEach(button => {
   button.addEventListener('click', () => {
     const snapValue = parseFloat(button.dataset.snap);
     
+    // Rimuovi active da tutti i button
+    document.querySelectorAll('.snap-btn').forEach(b => b.classList.remove('active'));
+    
+    // Aggiungi active al button cliccato
+    button.classList.add('active');
+    
+    // Centra il button con delay appropriato per iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const delay = isIOS ? 100 : 50;
+    
+    setTimeout(() => {
+      centerActiveSnapButton();
+    }, delay);
+    
     // Animazione smooth verso lo snap point
     gsap.to({}, {
-      duration: 1.2, // Durata dell'animazione
+      duration: 1.2,
       ease: "power2.inOut",
       onStart: () => {
         isSnappingFromMenu = true;
         targetScrollValue = snapValue;
-        document.querySelectorAll('.snap-btn').forEach(b => b.classList.remove('active'));
-        button.classList.add('active');
-        centerActiveSnapButton();
-      },
-      onUpdate: () => {
-        // Forza l'aggiornamento durante l'animazione
       },
       onComplete: () => {
         isSnappingFromMenu = false;
