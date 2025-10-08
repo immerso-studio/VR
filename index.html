@@ -402,6 +402,120 @@
     min-width: 80px;
   }
 }
+
+/* === TUTORIAL OVERLAY === */
+#tutorialOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+  z-index: 9997;
+}
+
+#tutorialOverlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tutorial-content {
+  text-align: center;
+  color: white;
+  font-family: "Helvetica", sans-serif;
+}
+
+.tutorial-text {
+  font-size: 1.1rem;
+  margin-top: 20px;
+  opacity: 0.9;
+}
+
+/* === ANIMAZIONE PER MOUSE === */
+.mouse-scroll {
+  width: 40px;
+  height: 70px;
+  border: 2px solid white;
+  border-radius: 20px;
+  position: relative;
+  margin: 0 auto;
+}
+
+.mouse-scroll::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  animation: scrollMouse 1.5s infinite ease-in-out;
+}
+
+@keyframes scrollMouse {
+  0% { opacity: 0; transform: translate(-50%, 0); }
+  50% { opacity: 1; transform: translate(-50%, 15px); }
+  100% { opacity: 0; transform: translate(-50%, 30px); }
+}
+
+/* === ANIMAZIONE PER TOUCH (con cornice telefono) === */
+.touch-scroll {
+  width: 60px;
+  height: 100px;
+  border: 2px solid white;
+  border-radius: 12px;
+  position: relative;
+  margin: 0 auto;
+  box-shadow: 0 0 8px rgba(255,255,255,0.2);
+}
+
+/* piccolo “altoparlante” in alto */
+.touch-scroll::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: white;
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+/* dito animato all'interno del telefono */
+.touch-scroll::after {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  animation: scrollTouch 1.5s infinite ease-in-out;
+}
+
+@keyframes scrollTouch {
+  0% { transform: translate(-50%, 0); opacity: 0; }
+  25% { opacity: 1; }
+  50% { transform: translate(-50%, 30px); opacity: 1; }
+  75% { opacity: 1; }
+  100% { transform: translate(-50%, 60px); opacity: 0; }
+}
+
+
         
 
   </style>
@@ -421,6 +535,15 @@
   <p class="logoText">Created by:</p>
   <img src="./assets/DEMO/LOGO-IMMERSO.png" alt="Logo" class="logo">
 </div>
+
+<!-- Tutorial Overlay -->
+<div id="tutorialOverlay">
+  <div class="tutorial-content">
+    <div class="tutorial-animation" id="tutorialAnimation"></div>
+    <p class="tutorial-text" id="tutorialText"></p>
+  </div>
+</div>
+
 
 <!-- Menu Snap Points -->
   <div id="snap-menu">
@@ -566,7 +689,9 @@ document.getElementById("startButton").addEventListener("click", () => {
   document.getElementById("startScreen").classList.remove("show");
   isStarted = true;
   animate();
+  showTutorial(); // 👈 Mostra la scheda tutorial dopo START
 });
+
 
 
 // Caricamenti
@@ -940,6 +1065,33 @@ function updateConfiguratorVisibility() {
   configurator.style.opacity = opacity;
   configurator.style.pointerEvents = (opacity > 0.6) ? 'auto' : 'none';
 }
+
+// === TUTORIAL OVERLAY ===
+const tutorialOverlay = document.getElementById("tutorialOverlay");
+const tutorialAnimation = document.getElementById("tutorialAnimation");
+const tutorialText = document.getElementById("tutorialText");
+
+function showTutorial() {
+  const isMobileWidth = window.innerWidth <= 991;
+  
+  tutorialOverlay.classList.add("show");
+
+  if (isMobileWidth) {
+    // Mostra animazione touch
+    tutorialAnimation.className = "tutorial-animation touch-scroll";
+    tutorialText.textContent = "Scorri con il dito per esplorare l’ambiente";
+  } else {
+    // Mostra animazione mouse
+    tutorialAnimation.className = "tutorial-animation mouse-scroll";
+    tutorialText.textContent = "Usa la rotellina del mouse per muoverti";
+  }
+
+  // Nascondi automaticamente dopo alcuni secondi
+  setTimeout(() => {
+    tutorialOverlay.classList.remove("show");
+  }, 6000);
+}
+
 
 
 
