@@ -801,11 +801,9 @@ document.querySelectorAll('.snap-btn').forEach(button => {
   button.addEventListener('click', () => {
     const snapValue = parseFloat(button.dataset.snap);
     
-    // Imposta una durata diversa per mobile e desktop
-    const snapDuration = isMobile ? 0.7 : 1.2; // 👈 più veloce su mobile
-
+    // Animazione smooth verso lo snap point
     gsap.to({}, {
-      duration: snapDuration,
+      duration: 0.1, // Durata dell'animazione
       ease: "power2.inOut",
       onStart: () => {
         isSnappingFromMenu = true;
@@ -814,13 +812,15 @@ document.querySelectorAll('.snap-btn').forEach(button => {
         button.classList.add('active');
         centerActiveSnapButton();
       },
+      onUpdate: () => {
+        // Forza l'aggiornamento durante l'animazione
+      },
       onComplete: () => {
         isSnappingFromMenu = false;
       }
     });
   });
 });
-
 
 
 
