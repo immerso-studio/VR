@@ -559,10 +559,15 @@ function tryHideLoader() {
     }, 500);
   }
 }
+
+let isStarted = false;
+
 document.getElementById("startButton").addEventListener("click", () => {
   document.getElementById("startScreen").classList.remove("show");
+  isStarted = true;
   animate();
 });
+
 
 // Caricamenti
 loader.load("./assets/DEMO/ff_pov.glb", (gltf) => {
@@ -636,20 +641,22 @@ document.getElementById('markerModal').addEventListener('hidden.bs.modal', () =>
 
 // Scroll
 window.addEventListener("wheel", (event) => {
-  if (isModalOpen) return;
+  if (!isStarted || isModalOpen) return; // blocca scroll prima dello start
   const isMouseScroll = Math.abs(event.deltaY) % 120 === 0;
   const sensitivity = isMouseScroll ? scrollSensitivity * 0.5 : scrollSensitivity;
   targetScrollValue += event.deltaY * sensitivity;
   targetScrollValue = Math.max(0, Math.min(1, targetScrollValue));
   event.preventDefault();
 }, { passive: false });
+
 window.addEventListener('touchstart', (event) => {
-  if (isModalOpen) return; 
+  if (!isStarted || isModalOpen) return; 
   touchStartY = event.touches[0].clientY;
   isScrolling = true;
 }, { passive: true });
+
 window.addEventListener('touchmove', (event) => {
-  if (isModalOpen) return;
+  if (!isStarted || isModalOpen) return;
   if (!isScrolling) return;
   const touchY = event.touches[0].clientY;
   const deltaY = touchStartY - touchY;
@@ -658,6 +665,7 @@ window.addEventListener('touchmove', (event) => {
   targetScrollValue = Math.max(0, Math.min(1, targetScrollValue));
   event.preventDefault();
 }, { passive: false });
+
 window.addEventListener('touchend', () => { if (!isModalOpen) isScrolling = false; });
 document.addEventListener('touchmove', (e) => { if (e.target.tagName === 'CANVAS') e.preventDefault(); }, { passive: false });
 
