@@ -194,6 +194,15 @@
       .marker-modal .modal-dialog {
         max-width: 95%;
         margin: 30px auto;
+        height: 90vh;
+        display: flex;
+        align-items: center;
+      }
+      
+      .marker-modal .modal-content {
+        max-height: 85vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
       
       .marker {
@@ -218,6 +227,13 @@
         padding: 6px 12px;
         font-size: 14px;
         filter: blur(1px);
+      }
+      
+      /* Previene il bounce scroll su iOS quando la modale è aperta */
+      body.modal-open {
+        position: fixed;
+        width: 100%;
+        height: 100%;
       }
     }
     
@@ -479,7 +495,7 @@
   box-shadow: 0 0 8px rgba(255,255,255,0.2);
 }
 
-/* piccolo “altoparlante” in alto */
+/* piccolo "altoparlante" in alto */
 .touch-scroll::before {
   content: "";
   position: absolute;
@@ -507,7 +523,7 @@
   animation: scrollTouch 1.5s infinite ease-in-out;
 }
 
-/* movimento inverso: dal basso verso l’alto */
+/* movimento inverso: dal basso verso l'alto */
 @keyframes scrollTouch {
   0%   { transform: translate(-50%, 50px); opacity: 0; }
   25%  { opacity: 1; }
@@ -516,8 +532,14 @@
   100% { transform: translate(-50%, -10px); opacity: 0; }
 }
 
+/* Assicura che la modale sia sempre sopra tutto */
+.modal-backdrop {
+  z-index: 1040;
+}
 
-        
+.modal {
+  z-index: 1050;
+}
 
   </style>
 </head>
@@ -667,6 +689,31 @@ const configuratorVisibility = {
   fadeOutEnd: 0.63
 };
 
+// Variabili per gestire lo scroll
+let scrollPosition = 0;
+let isModalOpen = false;
+let currentMarkerId = null;
+
+// Funzione per bloccare lo scroll dello sfondo
+function disableBodyScroll() {
+  scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+  document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollPosition}px`;
+  document.body.style.width = '100%';
+  document.body.style.height = '100%';
+}
+
+// Funzione per riabilitare lo scroll dello sfondo
+function enableBodyScroll() {
+  document.body.style.removeProperty('overflow');
+  document.body.style.removeProperty('position');
+  document.body.style.removeProperty('top');
+  document.body.style.removeProperty('width');
+  document.body.style.removeProperty('height');
+  window.scrollTo(0, scrollPosition);
+}
+
 // Loading progress
 function updateProgress(progress) {
   const progressBar = document.querySelector('.progress-bar');
@@ -685,6 +732,8 @@ function tryHideLoader() {
 }
 
 let isStarted = false;
+let isTutorialActive = false;
+
 
 document.getElementById("startButton").addEventListener("click", () => {
   document.getElementById("startScreen").classList.remove("show");
@@ -742,19 +791,22 @@ const rimLight = new THREE.DirectionalLight(0xffaa33, 1);
 rimLight.position.set(-3, 2, 3);
 scene.add(rimLight);
 
-let isModalOpen = false;
-let currentMarkerId = null;
+// Gestione eventi della modale
 document.getElementById('markerModal').addEventListener('show.bs.modal', () => {
   isModalOpen = true;
+  disableBodyScroll();
 });
+
 document.getElementById('markerModal').addEventListener('hidden.bs.modal', () => {
   isModalOpen = false;
+  enableBodyScroll();
+  
   if (currentMarkerId) {
     const markerElement = document.getElementById(currentMarkerId);
     markerVisibilityState[currentMarkerId] = true;
     const markerData = markers.find(m => m.id === currentMarkerId);
     if (markerData) updateMarker(markerData);
-    gsap.fromTo(markerElement,{ opacity: 0 },{ opacity: 1, duration: 0.5, ease: "power1.out" });
+    gsap.fromTo(markerElement, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power1.out" });
   }
   if (currentMarkerId === "marker1" && hoodAction && isHoodAnimationPlaying) {
     isHoodAnimationReversing = true;
@@ -766,8 +818,9 @@ document.getElementById('markerModal').addEventListener('hidden.bs.modal', () =>
 });
 
 // Scroll
+// === SCROLL (desktop) ===
 window.addEventListener("wheel", (event) => {
-  if (!isStarted || isModalOpen) return; // blocca scroll prima dello start
+  if (!isStarted || isModalOpen || isTutorialActive) return; // 👈 blocca anche durante tutorial
   const isMouseScroll = Math.abs(event.deltaY) % 120 === 0;
   const sensitivity = isMouseScroll ? scrollSensitivity * 0.5 : scrollSensitivity;
   targetScrollValue += event.deltaY * sensitivity;
@@ -775,14 +828,15 @@ window.addEventListener("wheel", (event) => {
   event.preventDefault();
 }, { passive: false });
 
+// === TOUCH (mobile) ===
 window.addEventListener('touchstart', (event) => {
-  if (!isStarted || isModalOpen) return; 
+  if (!isStarted || isModalOpen || isTutorialActive) return; // 👈 blocca anche qui
   touchStartY = event.touches[0].clientY;
   isScrolling = true;
 }, { passive: true });
 
 window.addEventListener('touchmove', (event) => {
-  if (!isStarted || isModalOpen) return;
+  if (!isStarted || isModalOpen || isTutorialActive) return; // 👈 blocca anche qui
   if (!isScrolling) return;
   const touchY = event.touches[0].clientY;
   const deltaY = touchStartY - touchY;
@@ -791,6 +845,7 @@ window.addEventListener('touchmove', (event) => {
   targetScrollValue = Math.max(0, Math.min(1, targetScrollValue));
   event.preventDefault();
 }, { passive: false });
+
 
 window.addEventListener('touchend', () => { if (!isModalOpen) isScrolling = false; });
 document.addEventListener('touchmove', (e) => { if (e.target.tagName === 'CANVAS') e.preventDefault(); }, { passive: false });
@@ -1074,15 +1129,13 @@ const tutorialText = document.getElementById("tutorialText");
 
 function showTutorial() {
   const isMobileWidth = window.innerWidth <= 991;
-  
+  isTutorialActive = true; // 👈 blocca lo scroll
   tutorialOverlay.classList.add("show");
 
   if (isMobileWidth) {
-    // Mostra animazione touch
     tutorialAnimation.className = "tutorial-animation touch-scroll";
-    tutorialText.textContent = "Scorri con il dito per esplorare l’ambiente";
+    tutorialText.textContent = "Scorri con il dito per esplorare l'ambiente";
   } else {
-    // Mostra animazione mouse
     tutorialAnimation.className = "tutorial-animation mouse-scroll";
     tutorialText.textContent = "Usa la rotellina del mouse per muoverti";
   }
@@ -1090,8 +1143,10 @@ function showTutorial() {
   // Nascondi automaticamente dopo alcuni secondi
   setTimeout(() => {
     tutorialOverlay.classList.remove("show");
+    isTutorialActive = false; // 👈 riattiva lo scroll
   }, 6000);
 }
+
 
 
 
