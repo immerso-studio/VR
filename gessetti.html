@@ -11,83 +11,119 @@
       overflow: hidden;
       background: #000;
       font-family: system-ui;
-      touch-action: none; /* IMPORTANTE: Previene lo scroll su mobile */
+      touch-action: none; /* Previene lo scroll su mobile */
     }
     #container {
       position: relative;
       width: 100%;
       height: 100%;
     }
-    .ui {
+
+    /* TOP BAR: pulsanti cancella / salva */
+    .ui-top {
       position: absolute;
-      left: 12px;
       top: 12px;
+      left: 12px;
       display: flex;
       gap: 8px;
-      z-index: 10;
-      flex-wrap: wrap;
+      z-index: 20;
+      align-items: center;
+      background: rgba(0,0,0,0.35);
+      padding: 8px 10px;
+      border-radius: 10px;
+      backdrop-filter: blur(6px);
     }
+
     button {
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.08);
       color: white;
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.12);
       padding: 8px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
-      backdrop-filter: blur(6px);
-      font-family: inherit;
-      transition: all 0.2s;
-    }
-    button:hover { 
-      background: rgba(255,255,255,0.2);
-      transform: translateY(-1px);
-    }
-    .color-picker {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-    }
-    .color-option {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 2px solid rgba(255,255,255,0.3);
-      transition: transform 0.2s;
-    }
-    .color-option:hover {
-      transform: scale(1.2);
-    }
-    .color-option.active {
-      border-color: white;
-      transform: scale(1.2);
-    }
-    .brush-controls {
       display: flex;
       gap: 8px;
       align-items: center;
-      background: rgba(255,255,255,0.1);
-      padding: 6px 12px;
-      border-radius: 6px;
+      transition: transform 0.16s, background 0.16s;
+      font-family: inherit;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      background: rgba(255,255,255,0.14);
+    }
+    button img.icon {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+      filter: invert(1); /* placeholder icons bianchi */
+    }
+
+    /* BRUSH CONTROLS (in alto a destra) */
+    /*.brush-controls {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: rgba(255,255,255,0.06);
+      padding: 8px 10px;
+      border-radius: 8px;
       backdrop-filter: blur(6px);
     }
-    .brush-size {
-      color: white;
-      font-size: 12px;
+    .brush-size { color: white; font-size: 13px; }
+    input[type="range"] { width: 100px; }
+
+    /* BOTTOM BAR: gessetti verticali che sbucano dal bordo inferiore */
+    .ui-bottom {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -60px; /* parte nascosta sotto il bordo del viewport */
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 0px;
+      z-index: 20;
+      pointer-events: none; /* wrapper non intercetta touch; gli elementi interni sì */
     }
-    input[type="range"] {
-      width: 80px;
+
+    .chalk-option {
+      pointer-events: auto;
+      width: 48px;
+      height: 200px; /* verticale */
+      background-repeat: no-repeat;
+      background-position: center bottom;
+      background-size: contain;
+      border-radius: 8px;
+      cursor: pointer;
+      transform: translateY(0);
+      transition: transform 0.18s cubic-bezier(.2,.9,.2,1), box-shadow 0.18s;
+      border: 2px solid transparent;
+      display: inline-block;
     }
+
+    .chalk-option.active {
+      transform: translateY(-70px); /* si alza abbastanza da uscire completamente dal bordo */
+    }
+
+
+    /* Info box */
     .info {
       position: absolute;
       bottom: 12px;
       left: 12px;
-      color: rgba(255,255,255,0.7);
+      color: rgba(255,255,255,0.85);
       font-size: 12px;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.45);
       padding: 6px 10px;
-      border-radius: 4px;
+      border-radius: 6px;
+      z-index: 15;
     }
+
+    /* Impediamo al menu contestuale di mangiare la UI */
+    canvas { touch-action: none; }
   </style>
 
   <script type="importmap">
@@ -101,21 +137,32 @@
 <body>
   <div id="container"></div>
 
-  <div class="ui">
-    <button id="clearBtn">Cancella</button>
-    <button id="saveBtn">Salva</button>
-    <div class="color-picker">
-      <div class="color-option active" style="background-color: #ff3c3c;" data-color="#ff3c3c"></div>
-      <div class="color-option" style="background-color: #3cff3c;" data-color="#3cff3c"></div>
-      <div class="color-option" style="background-color: #3c3cff;" data-color="#3c3cff"></div>
-      <div class="color-option" style="background-color: #ffff3c;" data-color="#ffff3c"></div>
-      <div class="color-option" style="background-color: #ff3cff;" data-color="#ff3cff"></div>
-      <div class="color-option" style="background-color: #ffffff;" data-color="#ffffff"></div>
-    </div>
-    <div class="brush-controls">
-      <span class="brush-size">Dimensione:</span>
-      <input type="range" id="brushSize" min="1" max="10" value="4" step="0.5">
-    </div>
+  <!-- TOP BAR -->
+  <div class="ui-top" role="toolbar" aria-label="Barra strumenti">
+    <button id="clearBtn" title="Cancella disegno">
+      <img class="icon" src="icon-cancella.png" alt="">
+      <span>Cancella</span>
+    </button>
+    <button id="saveBtn" title="Salva immagine">
+      <img class="icon" src="icon-salva.png" alt="">
+      <span>Salva</span>
+    </button>
+  </div>
+
+  <!-- BRUSH SIZE -->
+  <div class="brush-controls" aria-hidden="false">
+    <span class="brush-size">Dimensione:</span>
+    <input type="range" id="brushSize" min="1" max="10" value="4" step="0.5" aria-label="Dimensione pennello">
+  </div>
+
+  <!-- BOTTOM COLOR PICKER (placeholder images verticali) -->
+  <div class="ui-bottom" aria-label="Selettore colore">
+    <div class="chalk-option active" data-color="#ff3c3c" style="background-image: url('assets/gessetti/gessetto-rosso.png');" title="Rosso"></div>
+    <div class="chalk-option" data-color="#3cff3c" style="background-image: url('assets/gessetti/gessetto-verde.png');" title="Verde"></div>
+    <div class="chalk-option" data-color="#3c3cff" style="background-image: url('assets/gessetti/gessetto-blu.png');" title="Blu"></div>
+    <div class="chalk-option" data-color="#ffff3c" style="background-image: url('assets/gessetti/gessetto-giallo.png');" title="Giallo"></div>
+    <div class="chalk-option" data-color="#ff3cff" style="background-image: url('assets/gessetti/gessetto-viola.png');" title="Viola"></div>
+    <div class="chalk-option" data-color="#ffffff" style="background-image: url('assets/gessetti/gessetto-bianco.png');" title="Bianco"></div>
   </div>
 
   <div class="info">Disegna con il mouse o il dito per creare l'effetto gessetto</div>
@@ -123,66 +170,55 @@
   <script type="module">
     import * as THREE from 'three';
 
+    // Container e renderer
     const container = document.getElementById('container');
-
-    // === SCENA 2D CON ASFALTO ===
-    const renderer = new THREE.WebGLRenderer({ 
+    const renderer = new THREE.WebGLRenderer({
       antialias: true,
       preserveDrawingBuffer: true
     });
-    renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.domElement.style.touchAction = 'none'; // Importante per mobile
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.domElement.style.touchAction = 'none';
     container.appendChild(renderer.domElement);
 
+    // Scena e camera (ortografica per effetto 2D piatto)
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x151515);
 
-    // Camera ortografica per vista 2D piatta
-    const aspect = window.innerWidth / window.innerHeight;
-    const camera = new THREE.OrthographicCamera(
-      -aspect, aspect, 1, -1, 0.1, 1000
-    );
+    let aspect = window.innerWidth / window.innerHeight; // let per poterlo aggiornare
+    const camera = new THREE.OrthographicCamera(-aspect, aspect, 1, -1, 0.1, 1000);
     camera.position.z = 5;
     camera.lookAt(0, 0, 0);
 
-    // Luce semplice
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
 
-    // Creiamo una texture per l'asfalto più realistica
+    // === Creazione texture asfalto realistica (canvas) ===
     function createAsphaltTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 1024;
       canvas.height = 1024;
       const ctx = canvas.getContext('2d');
-      
-      // Colore di base scuro
+
+      // Base scura
       ctx.fillStyle = '#1a1a1a';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Aggiungiamo texture granulosa più pronunciata
+
+      // Rumore granuloso
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
-      
       for (let i = 0; i < data.length; i += 4) {
-        // Rumore granuloso più forte per asfalto
         const n = Math.random() * 60;
         data[i] = Math.max(0, data[i] - n);
         data[i + 1] = Math.max(0, data[i + 1] - n);
         data[i + 2] = Math.max(0, data[i + 2] - n);
-        
-        // Aggiungiamo qualche punto più chiaro
         if (Math.random() > 0.95) {
-          data[i] = 120;
-          data[i + 1] = 120;
-          data[i + 2] = 120;
+          data[i] = 120; data[i + 1] = 120; data[i + 2] = 120;
         }
       }
-      
       ctx.putImageData(imageData, 0, 0);
-      
-      // Aggiungiamo "crepe" e texture più realistiche
+
+      // Crepe e venature
       ctx.strokeStyle = '#0a0a0a';
       ctx.lineWidth = 2;
       for (let i = 0; i < 25; i++) {
@@ -197,33 +233,25 @@
         }
         ctx.stroke();
       }
-      
-      return new THREE.CanvasTexture(canvas);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(1.5, 1.5);
+      return texture;
     }
 
     const asphaltTexture = createAsphaltTexture();
-    asphaltTexture.wrapS = asphaltTexture.wrapT = THREE.RepeatWrapping;
-    asphaltTexture.repeat.set(1.5, 1.5);
-
-    // Piano asfalto 2D
-    const planeWidth = aspect * 2;
-    const planeHeight = 2;
-    
-    const asphaltGeometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
-    const asphaltMaterial = new THREE.MeshBasicMaterial({
-      map: asphaltTexture
-    });
-
+    const asphaltGeometry = new THREE.PlaneGeometry(aspect * 2, 2);
+    const asphaltMaterial = new THREE.MeshBasicMaterial({ map: asphaltTexture });
     const asphalt = new THREE.Mesh(asphaltGeometry, asphaltMaterial);
     scene.add(asphalt);
 
-    // === SISTEMA DI DISEGNO CON EFFETTO GESSETTO ===
+    // === SISTEMA DI DISEGNO CON EFFETTO GESSETTO (stile originale mantenuto) ===
     let drawing = false;
-    let currentColor = '#ff3c3c';
+    let currentColor = '#ff3c3c'; // colore iniziale
     let brushSize = 4;
     const chalkElements = [];
 
-    // Materiali per diversi tipi di particelle di gesso
     function createChalkMaterial(color, opacity = 0.9) {
       return new THREE.MeshBasicMaterial({
         color: color,
@@ -233,102 +261,101 @@
       });
     }
 
-    // Funzione per convertire le coordinate dello schermo in coordinate del mondo 2D
+    // Converte coordinate schermo -> mondo (aggiorna aspect correttamente)
     function screenToWorld(x, y) {
       const rect = renderer.domElement.getBoundingClientRect();
       const worldX = ((x - rect.left) / rect.width) * 2 - 1;
       const worldY = -((y - rect.top) / rect.height) * 2 + 1;
-      
+
       return new THREE.Vector3(
         worldX * aspect,
         worldY,
-        0.1 // Leggermente davanti all'asfalto
+        0.1 // leggermente davanti all'asfalto
       );
     }
 
-    // Crea una particella di gesso con effetto polveroso
+    // Crea particella di gesso complessa (main, alone, micro-particles)
     function createChalkParticle(position, color) {
       const group = new THREE.Group();
-      
-      // Particella principale - più opaca al centro
-      const mainSize = 0.01; // DIMENSIONE FISSA
-      const mainGeometry = new THREE.CircleGeometry(mainSize, 6);
+
+      // Particella principale (centro opaco)
+      const mainSize = 0.01;
+      const mainGeometry = new THREE.CircleGeometry(mainSize, 12);
       const mainMaterial = createChalkMaterial(color, 0.7 + Math.random() * 0.3);
       const mainParticle = new THREE.Mesh(mainGeometry, mainMaterial);
       group.add(mainParticle);
-      
-      // Alone polveroso - più grande e trasparente (dimensione fissa in base al brushSize)
+
+      // Alone polveroso (ring)
       const haloSize = mainSize * (1.5 + brushSize * 0.3);
-      const haloGeometry = new THREE.RingGeometry(haloSize * 0.3, haloSize, 8);
-      const haloMaterial = createChalkMaterial(color, 0.2 + Math.random() * 0.2);
+      const haloGeometry = new THREE.RingGeometry(haloSize * 0.3, haloSize, 16);
+      const haloMaterial = createChalkMaterial(color, 0.18 + Math.random() * 0.22);
       const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+      // posizioniamo leggermente dietro per evitare z-fighting visivo
+      halo.position.z = -0.001;
       group.add(halo);
-      
-      // Micro particelle sparse attorno (numero fisso)
-      const microParticlesCount = Math.floor(brushSize * 0.8);
+
+      // Micro particelle sparse attorno
+      const microParticlesCount = Math.max(1, Math.floor(brushSize * 0.8));
       for (let i = 0; i < microParticlesCount; i++) {
-        const microSize = mainSize * (0.2 + Math.random() * 0.3);
-        const microGeometry = new THREE.CircleGeometry(microSize, 4);
-        const microMaterial = createChalkMaterial(color, 0.4 + Math.random() * 0.3);
+        const microSize = mainSize * (0.18 + Math.random() * 0.45);
+        const microGeometry = new THREE.CircleGeometry(microSize, 6);
+        const microMaterial = createChalkMaterial(color, 0.35 + Math.random() * 0.35);
         const microParticle = new THREE.Mesh(microGeometry, microMaterial);
-        
+
         microParticle.position.set(
-          (Math.random() - 0.5) * haloSize * 1.2,
-          (Math.random() - 0.5) * haloSize * 1.2,
-          0
+          (Math.random() - 0.5) * haloSize * 1.3,
+          (Math.random() - 0.5) * haloSize * 1.3,
+          (Math.random() - 0.5) * 0.001
         );
-        
+        microParticle.rotation.z = Math.random() * Math.PI * 2;
         group.add(microParticle);
       }
-      
-      // Posizionamento con variazione casuale
+
+      // Leggera variazione di posizione/rotazione per naturalezza
       group.position.set(
         position.x + (Math.random() - 0.5) * 0.02,
         position.y + (Math.random() - 0.5) * 0.02,
         position.z + Math.random() * 0.05
       );
-      
-      // Rotazione casuale
       group.rotation.z = Math.random() * Math.PI * 2;
-      
+
       scene.add(group);
       chalkElements.push(group);
-      
+
       return group;
     }
 
-    // Disegna una traccia di gesso tra due punti
+    // Disegna una traccia tra start ed end generando particelle in base a distanza e brushSize
     function drawChalkStroke(start, end, color) {
       const distance = Math.sqrt(
         Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
       );
-      
-      // Numero di particelle basato sulla distanza e dimensione del pennello
+
+      // Numero segmenti dipende da distanza e dimensione pennello
       const segments = Math.max(3, Math.floor(distance * 30 * (brushSize / 4)));
-      
-      // Densità costante
+
+      // Densità per randomizzare presenza particelle
       const density = 1.0;
-      
+
       for (let i = 0; i <= segments; i++) {
         const t = i / segments;
         const point = new THREE.Vector3();
         point.lerpVectors(start, end, t);
-        
-        // Aggiungiamo rumore al percorso
+
+        // Rumore sul tracciato per effetto naturale
         point.x += (Math.random() - 0.5) * 0.01;
         point.y += (Math.random() - 0.5) * 0.01;
         point.z = 0.1 + Math.random() * 0.05;
-        
-        // Creiamo particelle in base alla densità
+
         if (Math.random() < density) {
           createChalkParticle(point, color);
         }
       }
     }
 
+    // Gestione input (mouse + touch)
     let lastPoint = null;
 
-    // Funzioni separate per mouse e touch
     function handleStart(x, y) {
       drawing = true;
       const point = screenToWorld(x, y);
@@ -338,7 +365,6 @@
 
     function handleMove(x, y) {
       if (!drawing || !lastPoint) return;
-      
       const point = screenToWorld(x, y);
       drawChalkStroke(lastPoint, point, currentColor);
       lastPoint = point;
@@ -349,38 +375,36 @@
       lastPoint = null;
     }
 
-    // Event listeners per mouse
+    // Mouse events
     renderer.domElement.addEventListener('mousedown', (e) => {
       e.preventDefault();
       handleStart(e.clientX, e.clientY);
     });
-
     renderer.domElement.addEventListener('mousemove', (e) => {
       e.preventDefault();
       handleMove(e.clientX, e.clientY);
     });
-
     window.addEventListener('mouseup', (e) => {
       e.preventDefault();
       handleEnd();
     });
 
-    // Event listeners per touch - CORRETTI
+    // Touch events (corretti)
     renderer.domElement.addEventListener('touchstart', (e) => {
       e.preventDefault();
       if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        handleStart(touch.clientX, touch.clientY);
+        const t = e.touches[0];
+        handleStart(t.clientX, t.clientY);
       }
-    });
+    }, { passive: false });
 
     renderer.domElement.addEventListener('touchmove', (e) => {
       e.preventDefault();
       if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        handleMove(touch.clientX, touch.clientY);
+        const t = e.touches[0];
+        handleMove(t.clientX, t.clientY);
       }
-    });
+    }, { passive: false });
 
     renderer.domElement.addEventListener('touchend', (e) => {
       e.preventDefault();
@@ -392,14 +416,15 @@
       handleEnd();
     });
 
-    // Previene il menu contestuale
-    renderer.domElement.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-    });
+    // Previene menu contestuale
+    renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
     // === CONTROLLI UI ===
     document.getElementById('clearBtn').onclick = () => {
-      chalkElements.forEach(element => scene.remove(element));
+      chalkElements.forEach(el => {
+        // rimuoviamo dal mondo (non obbligatorio il dispose completo qui)
+        scene.remove(el);
+      });
       chalkElements.length = 0;
     };
 
@@ -410,47 +435,52 @@
       link.click();
     };
 
-    // Selezione colore
-    document.querySelectorAll('.color-option').forEach(option => {
+    // Colori / selettore gessetti (bottom)
+    document.querySelectorAll('.chalk-option').forEach(option => {
       option.addEventListener('click', () => {
-        document.querySelectorAll('.color-option').forEach(opt => {
-          opt.classList.remove('active');
-        });
+        document.querySelectorAll('.chalk-option').forEach(opt => opt.classList.remove('active'));
         option.classList.add('active');
-        currentColor = option.getAttribute('data-color');
+        currentColor = option.getAttribute('data-color') || '#ffffff';
       });
+      // supporto touch: stessa cosa (utile su alcuni browser)
+      option.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        document.querySelectorAll('.chalk-option').forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+        currentColor = option.getAttribute('data-color') || '#ffffff';
+      }, { passive: false });
     });
 
-    // Controllo dimensione pennello
+    // Brush size control
     document.getElementById('brushSize').addEventListener('input', (e) => {
       brushSize = parseFloat(e.target.value);
     });
 
-    // === RESIZE ===
+    // Resize handler: aggiorna renderer, camera, aspect e dimensione piano asfalto
     function handleResize() {
       const width = window.innerWidth;
       const height = window.innerHeight;
-      const newAspect = width / height;
-      
-      renderer.setSize(width, height);
-      
-      // Aggiorna la camera ortografica
-      camera.left = -newAspect;
-      camera.right = newAspect;
-      camera.top = 1;
-      camera.bottom = -1;
-      camera.updateProjectionMatrix();
-      
-      // Aggiorna le dimensioni del piano asfalto
-      scene.remove(asphalt);
-      const newGeometry = new THREE.PlaneGeometry(newAspect * 2, 2);
-      asphalt.geometry = newGeometry;
-      scene.add(asphalt);
-    }
+      aspect = width / height;
 
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      camera.left = -aspect;
+      camera.right = aspect;
+      camera.updateProjectionMatrix();
+
+      // aggiorna il piano asfalto
+      const newGeometry = new THREE.PlaneGeometry(aspect * 2, 2);
+      asphalt.geometry.dispose();
+      asphalt.geometry = newGeometry;
+
+      // opzionale: aggiorna lo repeat se vuoi mantenere scala costante
+      asphaltTexture.repeat.set(1.5, 1.5);
+    }
     window.addEventListener('resize', handleResize);
 
-    // === LOOP ===
+    // Loop di rendering
     function animate() {
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
