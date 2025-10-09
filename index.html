@@ -1,491 +1,1229 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Gessetto su Asfalto - Three.js</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Scroll Camera Path - Visualizzazione Mobile Ottimizzata</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
+    :root {
+      --marker-size: 60px;
+    }
+    body { 
+      margin: 0; 
       overflow: hidden;
-      background: #000;
-      font-family: system-ui;
-      touch-action: none; /* Previene lo scroll su mobile */
+      touch-action: none; /* Previene lo scroll nativo del browser */
+      -webkit-overflow-scrolling: touch;
     }
-    #container {
-      position: relative;
-      width: 100%;
-      height: 100%;
+    canvas { 
+      display: block; 
+      width: 100% !important;
+      height: 100% !important;
     }
 
-    /* TOP BAR: pulsanti cancella / salva */
-    .ui-top {
+    .marker {
       position: absolute;
-      top: 12px;
-      left: 12px;
-      display: flex;
-      gap: 8px;
-      z-index: 20;
-      align-items: center;
-      background: rgba(0,0,0,0.35);
-      padding: 8px 10px;
-      border-radius: 10px;
-      backdrop-filter: blur(6px);
-    }
-
-    button {
-      background: rgba(255,255,255,0.08);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.12);
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      transition: transform 0.16s, background 0.16s;
-      font-family: inherit;
-    }
-    button:hover {
-      transform: translateY(-2px);
-      background: rgba(255,255,255,0.14);
-    }
-    button img.icon {
-      width: 16px;
-      height: 16px;
-      object-fit: contain;
-      filter: invert(1); /* placeholder icons bianchi */
-    }
-
-    /* BRUSH CONTROLS (in alto a destra) */
-    /*.brush-controls {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 20;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      background: rgba(255,255,255,0.06);
-      padding: 8px 10px;
-      border-radius: 8px;
-      backdrop-filter: blur(6px);
-    }
-    .brush-size { color: white; font-size: 13px; }
-    input[type="range"] { width: 100px; }
-
-    /* BOTTOM BAR: gessetti verticali che sbucano dal bordo inferiore */
-    .ui-bottom {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: -60px; /* parte nascosta sotto il bordo del viewport */
+      width: 60px;
+      height: 60px;
+      background: white;
+      border-radius: 50%;
       display: flex;
       justify-content: center;
-      align-items: flex-end;
-      gap: 0px;
-      z-index: 20;
-      pointer-events: none; /* wrapper non intercetta touch; gli elementi interni sì */
-    }
-
-    .chalk-option {
+      align-items: center;
+      font-size: 20px;
       pointer-events: auto;
-      width: 48px;
-      height: 200px; /* verticale */
-      background-repeat: no-repeat;
-      background-position: center bottom;
-      background-size: contain;
-      border-radius: 8px;
       cursor: pointer;
-      transform: translateY(0);
-      transition: transform 0.18s cubic-bezier(.2,.9,.2,1), box-shadow 0.18s;
-      border: 2px solid transparent;
-      display: inline-block;
+      opacity: 1;
+      transition: opacity 0.4s ease, background-color 0.4s ease, border 0.4s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      z-index: 10;
     }
 
-    .chalk-option.active {
-      transform: translateY(-70px); /* si alza abbastanza da uscire completamente dal bordo */
+    #marker1 {
+      background: rgba(255, 255, 255, 0.3); /* leggermente trasparente */
+      backdrop-filter: blur(3px) saturate(180%); /* effetto vetro smerigliato */
+      -webkit-backdrop-filter: blur(12px) saturate(180%); /* supporto Safari */
+      border: 3px solid rgba(178, 178, 178, 0.3);
+      border-radius: 5px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      color: #ffffff;
+    }
+    #marker1:hover {
+      color: #ffffff;
+      border: 3px solid rgba(255, 255, 255, 0.8);
+      transform: scale(1.05);
     }
 
-
-    /* Info box */
-    .info {
-      position: absolute;
-      bottom: 12px;
-      left: 12px;
-      color: rgba(255,255,255,0.85);
-      font-size: 12px;
-      background: rgba(0,0,0,0.45);
-      padding: 6px 10px;
-      border-radius: 6px;
-      z-index: 15;
+    #marker2 {
+      background: rgba(255, 255, 255, 0.3); /* leggermente trasparente */
+      backdrop-filter: blur(3px) saturate(180%); /* effetto vetro smerigliato */
+      -webkit-backdrop-filter: blur(12px) saturate(180%); /* supporto Safari */
+      border: 3px solid rgba(178, 178, 178, 0.3);
+      border-radius: 5px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      color: #ffffff;
+    }
+    #marker2:hover {
+      color: #ffffff;
+      border: 3px solid rgba(255, 255, 255, 0.8);
+      transform: scale(1.05);
     }
 
-    /* Impediamo al menu contestuale di mangiare la UI */
-    canvas { touch-action: none; }
-  </style>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    /* Modal personalizzata per i marker */
+    .marker-modal .modal-dialog {
+      max-width: 40%;
+      margin: 1.75rem auto;
     }
+    
+    /* MODIFICA: Posizionamento a sinistra per desktop */
+    @media (min-width: 992px) {
+      .marker-modal .modal-dialog {
+        margin: 1.75rem 0 1.75rem 1.75rem;
+        max-width: 500px;
+        position: fixed;
+        left: 0;
+        top: 0;
+        transform: none !important;
+      }
+    }
+    
+    .marker-modal .modal-content {
+      background: rgba(0, 0, 0, 0.5); /* leggermente trasparente */
+      backdrop-filter: blur(50px) saturate(100%); /* effetto vetro smerigliato */
+      -webkit-backdrop-filter: blur(12px) saturate(180%); /* supporto Safari */
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 1px;
+      box-shadow: 0 0px 80px rgba(0, 0, 0, 0.5);
+      color: #ffffff;
+      max-height: 95vh;
+      overflow-y: auto;
+    }
+
+    .marker-modal .btn-close {
+      filter: invert(1);
+    }
+        
+    /* Header con vetro scuro */
+    .marker-modal .modal-header {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 1px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* MODIFICA: Aggiunta regola per il contenitore interno dello snap menu */
+    #snap-menu-inner {
+      display: flex;
+      gap: 15px;
+      width: max-content;
+      align-items: center; /* Aggiungi questo */
+      min-width: 100%; /* Assicura la larghezza minima */
+    }
+    
+    #snap-menu {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      z-index: 100;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      transition: all 0.5s ease;
+      max-width: 90%;
+      justify-content: flex-start;
+        /* Aggiungi queste proprietà per iOS */
+      -webkit-overflow-scrolling: touch;
+      overflow-y: hidden; /* Importante per iOS */
+      white-space: nowrap;
+    } 
+    
+    #snap-menu::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .snap-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      font-weight: 500;
+      flex-shrink: 0;
+      filter: blur(1.5px);
+      opacity: 0.7;
+        /* Aggiungi queste proprietà */
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .snap-btn.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      filter: blur(0);
+      opacity: 1;
+      transform: scale(1.1);
+      z-index: 2;
+    }
+    
+    .snap-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+    
+    /* Per dispositivi mobili */
+    @media (max-width: 991px) {
+      .marker-modal .modal-dialog {
+        max-width: 95%;
+        margin: 30px auto;
+        display: flex;
+        align-items: center;
+      }
+      
+      .marker-modal .modal-content {
+        max-height: 85vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .marker {
+        width: 50px;
+        height: 50px;
+        font-size: 18px;
+      }
+      
+      body {
+        position: fixed;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+      }
+      
+      #snap-menu {
+        padding: 8px 15px;
+        max-width: 85%;
+      }
+      
+      .snap-btn {
+        padding: 6px 12px;
+        font-size: 14px;
+        filter: blur(1px);
+      }
+      
+      /* Previene il bounce scroll su iOS quando la modale è aperta */
+      body.modal-open {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+      }
+    }
+    
+    /* Loading screen */
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 9999;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    
+    .progress {
+      width: 80%;
+      max-width: 500px;
+      margin-top: 20px;
+      height: 5px;
+    }
+
+    #startScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(10px);      
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+      flex-direction: column;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    #startScreen.show {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    #startButton {
+      background: rgba(255, 255, 255, 0.15); /* leggermente trasparente */
+      backdrop-filter: blur(12px) saturate(180%); /* effetto vetro smerigliato */
+      -webkit-backdrop-filter: blur(12px) saturate(180%); /* supporto Safari */
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      color: #adaaaa;
+      font-family: Helvetica;
+      font-weight: 400;
+    }
+
+    #startButton:hover {
+      color: #ffffff;
+      border: 3px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .logo {
+      max-width: 230px;
+      height: auto;
+      position: fixed;
+      filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.2));
+      margin-top: 600px;
+    }
+
+    .logoText {
+      position: fixed;
+      font-size: 0.8rem;
+      margin-top: 500px;
+      color: #8f8f8f;
+      font-family: Helvetica;
+    }
+
+        /* Aggiungi queste regole CSS per personalizzare la barra di scorrimento */
+    .marker-modal .modal-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .marker-modal .modal-content::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+    }
+    
+    .marker-modal .modal-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .marker-modal .modal-content::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+    
+    /* Per Firefox */
+    .marker-modal .modal-content {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
+    }
+
+    /* Configuratore 3D */
+/* Configuratore 3D - Versione con frecce */
+#configurator {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 25px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 90;
+  transition: all 0.5s ease;
+}
+
+.config-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.config-arrow:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transform: scale(1.1);
+}
+
+.config-arrow:active {
+  transform: scale(0.95);
+}
+
+.config-arrow img {
+  width: 60%;
+  height: 60%;
+}
+
+.config-name {
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  min-width: 100px;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Per dispositivi mobili */
+@media (max-width: 991px) {
+  #configurator {
+    bottom: 90px;
+    padding: 10px 20px;
+    gap: 15px;
   }
-  </script>
+  
+  .config-arrow {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .config-name {
+    font-size: 14px;
+    min-width: 80px;
+  }
+}
+
+/* === TUTORIAL OVERLAY === */
+#tutorialOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+  z-index: 9997;
+}
+
+#tutorialOverlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tutorial-content {
+  text-align: center;
+  color: white;
+  font-family: "Helvetica", sans-serif;
+}
+
+.tutorial-text {
+  font-size: 1.1rem;
+  margin-top: 20px;
+  opacity: 0.9;
+}
+
+/* === ANIMAZIONE PER MOUSE === */
+.mouse-scroll {
+  width: 40px;
+  height: 70px;
+  border: 3px solid white;
+  border-radius: 20px;
+  position: relative;
+  margin: 0 auto;
+}
+
+.mouse-scroll::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 50%;
+  animation: scrollMouse 1.5s infinite ease-in-out;
+}
+
+@keyframes scrollMouse {
+  0% { opacity: 0; transform: translate(-50%, 0); }
+  50% { opacity: 1; transform: translate(-50%, 15px); }
+  100% { opacity: 0; transform: translate(-50%, 30px); }
+}
+
+/* === ANIMAZIONE PER TOUCH (con cornice telefono) === */
+.touch-scroll {
+  width: 60px;
+  height: 100px;
+  border: 2px solid white;
+  border-radius: 12px;
+  position: relative;
+  margin: 0 auto;
+  box-shadow: 0 0 8px rgba(255,255,255,0.2);
+}
+
+/* piccolo "altoparlante" in alto */
+.touch-scroll::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: white;
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+/* dito animato all'interno del telefono */
+.touch-scroll::after {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  animation: scrollTouch 1.5s infinite ease-in-out;
+}
+
+/* movimento inverso: dal basso verso l'alto */
+@keyframes scrollTouch {
+  0%   { transform: translate(-50%, 50px); opacity: 0; }
+  25%  { opacity: 1; }
+  50%  { transform: translate(-50%, 20px); opacity: 1; }
+  75%  { opacity: 1; }
+  100% { transform: translate(-50%, -10px); opacity: 0; }
+}
+
+/* Assicura che la modale sia sempre sopra tutto */
+.modal-backdrop {
+  z-index: 1040;
+}
+
+.modal {
+  z-index: 1050;
+}
+
+  </style>
 </head>
 <body>
-  <div id="container"></div>
 
-  <!-- TOP BAR -->
-  <div class="ui-top" role="toolbar" aria-label="Barra strumenti">
-    <button id="clearBtn" title="Cancella disegno">
-      <img class="icon" src="icon-cancella.png" alt="">
-      <span>Cancella</span>
-    </button>
-    <button id="saveBtn" title="Salva immagine">
-      <img class="icon" src="icon-salva.png" alt="">
-      <span>Salva</span>
-    </button>
+<!-- Loading Screen -->
+<div id="loading">
+  <div class="progress">
+    <div class="progress-bar progress-bar-animated" role="progressbar" style="width: 0%"></div>
+  </div>
+</div>
+
+<!-- Schermata Start -->
+<div id="startScreen">
+  <button id="startButton" class="btn btn-light btn-lg px-5 py-3 shadow">START</button>
+  <p class="logoText">Created by:</p>
+  <img src="./assets/DEMO/LOGO-IMMERSO.png" alt="Logo" class="logo">
+</div>
+
+<!-- Tutorial Overlay -->
+<div id="tutorialOverlay">
+  <div class="tutorial-content">
+    <div class="tutorial-animation" id="tutorialAnimation"></div>
+    <p class="tutorial-text" id="tutorialText"></p>
+  </div>
+</div>
+
+
+<!-- Menu Snap Points -->
+  <div id="snap-menu">
+    <div id="snap-menu-inner">
+      <button class="snap-btn" data-snap="0.001">1. Cucina</button>
+      <button class="snap-btn" data-snap="0.35">2. Salotto</button>
+      <button class="snap-btn" data-snap="0.5">3. Sala</button>
+      <button class="snap-btn" data-snap="0.6">4. Ingresso</button>
+      <button class="snap-btn" data-snap="0.7">5. Bagno</button>
+      <button class="snap-btn" data-snap="0.808">6. Bagno</button>
+
+    </div>
   </div>
 
-  <!-- BRUSH SIZE -->
-  <div class="brush-controls" aria-hidden="false">
-    <span class="brush-size">Dimensione:</span>
-    <input type="range" id="brushSize" min="1" max="10" value="4" step="0.5" aria-label="Dimensione pennello">
+<!-- Configuratore 3D - Versione con frecce -->
+<div id="configurator">
+  <div class="config-arrow" id="prev-model">
+    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xNS40MSA3LjQxTDE0IDZsLTYgNiA2IDYgMS40MS0xLjQxTDEwLjgzIDEyeiIvPjwvc3ZnPg==" alt="Precedente">
   </div>
-
-  <!-- BOTTOM COLOR PICKER (placeholder images verticali) -->
-  <div class="ui-bottom" aria-label="Selettore colore">
-    <div class="chalk-option active" data-color="#ff3c3c" style="background-image: url('assets/gessetti/gessetto-rosso.png');" title="Rosso"></div>
-    <div class="chalk-option" data-color="#3cff3c" style="background-image: url('assets/gessetti/gessetto-verde.png');" title="Verde"></div>
-    <div class="chalk-option" data-color="#3c3cff" style="background-image: url('assets/gessetti/gessetto-blu.png');" title="Blu"></div>
-    <div class="chalk-option" data-color="#ffff3c" style="background-image: url('assets/gessetti/gessetto-giallo.png');" title="Giallo"></div>
-    <div class="chalk-option" data-color="#ff3cff" style="background-image: url('assets/gessetti/gessetto-viola.png');" title="Viola"></div>
-    <div class="chalk-option" data-color="#ffffff" style="background-image: url('assets/gessetti/gessetto-bianco.png');" title="Bianco"></div>
+  <div class="config-name" id="current-model-name">Cilindro</div>
+  <div class="config-arrow" id="next-model">
+    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMCA2TDggNy40MSAxMy4xNyAxMiA4IDE2LjU5IDEwIDE4bDYtNnoiLz48L3N2Zz4=" alt="Successivo">
   </div>
+</div>
 
-  <div class="info">Disegna con il mouse o il dito per creare l'effetto gessetto</div>
+<!-- MARKER UI -->
+<div id="marker1" class="marker" aria-label="Apri Dettagli 1" title="Apri Dettagli 1"><b>+</b></div>
+<div id="marker2" class="marker" aria-label="Apri Dettagli 2" title="Apri Dettagli 2"><b>+</b></div>
 
-  <script type="module">
-    import * as THREE from 'three';
+<!-- Modale per i marker -->
+<div class="modal fade marker-modal" id="markerModal" tabindex="-1" aria-labelledby="markerModalLabel" aria-hidden="true" data-bs-backdrop="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="markerModalLabel">Titolo Marker</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Contenuto del marker...
+      </div>
 
-    // Container e renderer
-    const container = document.getElementById('container');
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      preserveDrawingBuffer: true
+    </div>
+  </div>
+</div>
+
+<!-- Import map Three.js -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "GLTFLoader": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js",
+    "DRACOLoader": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js"
+  }
+}
+</script>
+
+<!-- GSAP -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollToPlugin.min.js"></script>
+
+
+<!-- Bootstrap 5 JS (bundle include Popper) -->
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+  crossorigin="anonymous"
+></script>
+
+<!-- App -->
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "GLTFLoader";
+import { DRACOLoader } from "DRACOLoader";
+
+const scene = new THREE.Scene();
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+// Impostazioni per mobile
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const baseFOV = isMobile ? 40 : 35;
+
+const camera = new THREE.PerspectiveCamera(baseFOV, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 1, 3);
+
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/");
+const loader = new GLTFLoader();
+loader.setDRACOLoader(dracoLoader);
+
+let mixer, action, dummyCamera;
+let targetScrollValue = 0;
+let currentScrollValue = 0;
+const scrollSensitivity = isMobile ? 0.0004 : 0.0002;
+const smoothFactor = 0.009;
+
+const snapPoints = [0.001, 0.35, 0.5, 0.6];
+const snapThreshold = 0.02;
+
+let touchStartY = 0;
+let isScrolling = false;
+
+let hoodMixer = null;
+let hoodAction = null;
+let isHoodAnimationPlaying = false;
+let hoodAnimationDuration = 0;
+let isHoodAnimationReversing = false;
+
+const markerVisibilityState = {};
+let isSnappingFromMenu = false;
+
+// Configuratore - proprietà di visibilità
+const configuratorVisibility = {
+  fadeInStart: 0.58,
+  fullyVisible: 0.59,
+  fadeOutStart: 0.62,
+  fadeOutEnd: 0.63
+};
+
+// Variabili per gestire lo scroll
+let scrollPosition = 0;
+let isModalOpen = false;
+let currentMarkerId = null;
+
+// Funzione per bloccare lo scroll dello sfondo
+function disableBodyScroll() {
+  scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+  document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollPosition}px`;
+  document.body.style.width = '100%';
+  document.body.style.height = '100%';
+}
+
+// Funzione per riabilitare lo scroll dello sfondo
+function enableBodyScroll() {
+  document.body.style.removeProperty('overflow');
+  document.body.style.removeProperty('position');
+  document.body.style.removeProperty('top');
+  document.body.style.removeProperty('width');
+  document.body.style.removeProperty('height');
+  window.scrollTo(0, scrollPosition);
+}
+
+// Loading progress
+function updateProgress(progress) {
+  const progressBar = document.querySelector('.progress-bar');
+  progressBar.style.width = `${progress}%`;
+}
+let povLoaded = false;
+let cameraPathLoaded = false;
+function tryHideLoader() {
+  if (povLoaded && cameraPathLoaded) {
+    updateProgress(100);
+    setTimeout(() => {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('startScreen').classList.add('show');
+    }, 500);
+  }
+}
+
+let isStarted = false;
+let isTutorialActive = false;
+
+
+document.getElementById("startButton").addEventListener("click", () => {
+  document.getElementById("startScreen").classList.remove("show");
+  isStarted = true;
+  animate();
+  showTutorial(); // 👈 Mostra la scheda tutorial dopo START
+});
+
+
+
+// Caricamenti
+loader.load("./assets/DEMO/ff_pov.glb", (gltf) => {
+  scene.add(gltf.scene);
+  gltf.scene.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  const hoodClip = THREE.AnimationClip.findByName(gltf.animations, "ff_split-001_hood-001Action");
+  if (hoodClip) {
+    hoodMixer = new THREE.AnimationMixer(gltf.scene);
+    hoodAction = hoodMixer.clipAction(hoodClip);
+    hoodAnimationDuration = hoodClip.duration;
+    hoodAction.setLoop(THREE.LoopOnce);
+    hoodAction.clampWhenFinished = true;
+    hoodAction.paused = true;
+  }
+  updateProgress(50);
+  povLoaded = true;
+  tryHideLoader();
+});
+loader.load("./assets/DEMO/camera_paths.glb", (gltf) => {
+  scene.add(gltf.scene);
+  mixer = new THREE.AnimationMixer(gltf.scene);
+  const clip = THREE.AnimationClip.findByName(gltf.animations, "ff_empty_action");
+  if (clip) {
+    action = mixer.clipAction(clip);
+    action.play();
+  }
+  dummyCamera = gltf.scene.getObjectByName("ff_empty");
+  cameraPathLoaded = true;
+  tryHideLoader();
+
+    // QUI - DOPO che camera_paths.glb è caricato, inizializza il configuratore
+  setTimeout(initConfigurator, 1000);
+});
+
+// Luci
+scene.add(new THREE.AmbientLight(0xffffff, 2));
+const fillLight = new THREE.DirectionalLight(0xffffff, 1);
+fillLight.position.set(-5, 5, -5);
+scene.add(fillLight);
+const rimLight = new THREE.DirectionalLight(0xffaa33, 1);
+rimLight.position.set(-3, 2, 3);
+scene.add(rimLight);
+
+// Gestione eventi della modale
+document.getElementById('markerModal').addEventListener('show.bs.modal', () => {
+  isModalOpen = true;
+  disableBodyScroll();
+});
+
+document.getElementById('markerModal').addEventListener('hidden.bs.modal', () => {
+  isModalOpen = false;
+  enableBodyScroll();
+  
+  if (currentMarkerId) {
+    const markerElement = document.getElementById(currentMarkerId);
+    markerVisibilityState[currentMarkerId] = true;
+    const markerData = markers.find(m => m.id === currentMarkerId);
+    if (markerData) updateMarker(markerData);
+    gsap.fromTo(markerElement, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power1.out" });
+  }
+  if (currentMarkerId === "marker1" && hoodAction && isHoodAnimationPlaying) {
+    isHoodAnimationReversing = true;
+    hoodAction.paused = false;
+    hoodAction.timeScale = -1;
+    hoodAction.play();
+  }
+  currentMarkerId = null;
+});
+
+// Scroll
+// === SCROLL (desktop) ===
+window.addEventListener("wheel", (event) => {
+  if (!isStarted || isModalOpen || isTutorialActive) return; // 👈 blocca anche durante tutorial
+  const isMouseScroll = Math.abs(event.deltaY) % 120 === 0;
+  const sensitivity = isMouseScroll ? scrollSensitivity * 0.5 : scrollSensitivity;
+  targetScrollValue += event.deltaY * sensitivity;
+  targetScrollValue = Math.max(0, Math.min(1, targetScrollValue));
+  event.preventDefault();
+}, { passive: false });
+
+// === TOUCH (mobile) ===
+window.addEventListener('touchstart', (event) => {
+  if (!isStarted || isModalOpen || isTutorialActive) return; // 👈 blocca anche qui
+  touchStartY = event.touches[0].clientY;
+  isScrolling = true;
+}, { passive: true });
+
+window.addEventListener('touchmove', (event) => {
+  if (!isStarted || isModalOpen || isTutorialActive) return; // 👈 blocca anche qui
+  if (!isScrolling) return;
+  const touchY = event.touches[0].clientY;
+  const deltaY = touchStartY - touchY;
+  touchStartY = touchY;
+  targetScrollValue += deltaY * scrollSensitivity * 2;
+  targetScrollValue = Math.max(0, Math.min(1, targetScrollValue));
+  event.preventDefault();
+}, { passive: false });
+
+
+window.addEventListener('touchend', () => { if (!isModalOpen) isScrolling = false; });
+document.addEventListener('touchmove', (e) => { if (e.target.tagName === 'CANVAS') e.preventDefault(); }, { passive: false });
+
+// === DEFINIZIONE DEI MARKER ===
+const markers = [
+  {
+    id: "marker1",
+    position: new THREE.Vector3(-8, 1.3, -5),
+    fadeInStart: 0,
+    fullyVisible: 0,
+    fadeOutStart: 0.05,
+    fadeOutEnd: 0.051,
+    title: "Bilbao Black",
+    content: `
+      <p><i>Model No.18</i> è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
+        delle funzioni base che solitamente determinano il design ergonomico di un divano, 
+        ma hanno anche creato un modello multifunzionale da poter vivere nel massimo comfort, 
+        dal riposo pomeridiano al lavoro, grazie agli angoli dalla forma morbida, alle dimensioni 
+        ottimali del bracciolo e dello schienale e agli accessori.<br><br> Il peso del modello è stato progettato 
+        in modo tale che la stabilità non richieda il collegamento degli elementi, quindi in occasioni speciali, 
+        gli elementi possono essere riorganizzati quando si ricevono ospiti.</p>
+      <img src="./assets/DEMO/cucina.jpg" class="img-fluid shadow" alt="Immagine Marker 1">
+    `,
+  },
+  {
+    id: "marker2",
+    position: new THREE.Vector3(-7, 1.3, 4),
+    fadeInStart: 0.28,
+    fullyVisible: 0.281,
+    fadeOutStart: 0.38,
+    fadeOutEnd: 0.381,
+    title: "DIVANO",
+    content: `
+      <p>Model No.18 è un divano rivestito in tessuto. Nella progettazione del divano il team Hannabi ha tenuto conto non solo 
+        delle funzioni base che solitamente determinano il design ergonomico di un divano, 
+        ma hanno anche creato un modello multifunzionale da poter vivere nel massimo comfort, 
+        dal riposo pomeridiano al lavoro, grazie agli angoli dalla forma morbida, alle dimensioni 
+        ottimali del bracciolo e dello schienale e agli accessori. Il peso del modello è stato progettato 
+        in modo tale che la stabilità non richieda il collegamento degli elementi, quindi in occasioni speciali, 
+        gli elementi possono essere riorganizzati quando si ricevono ospiti.</p>
+      <img src="./assets/DEMO/2.webp" class="img-fluid shadow" alt="Immagine Marker 1">
+        <p><br>Un ripiano posizionabile sullo schienale che funge da tavolino per la colazione o per el computer sulle ginocchia. Una vasta scelta di cuscini. Pouf individuali.</p>
+    `
+  },
+];
+
+const markerModal = new bootstrap.Modal(document.getElementById('markerModal'));
+function showModal(title, content) {
+  const targetFOV = Math.max(25, baseFOV - 5);
+  gsap.to(camera,{ fov: targetFOV,duration: 0.8,ease: "power2.inOut",onUpdate: () => camera.updateProjectionMatrix() });
+  document.getElementById('markerModalLabel').textContent = title;
+  const modalBody = document.querySelector('.modal-body');
+  modalBody.innerHTML = content;
+  gsap.set(modalBody.children,{ opacity: 0, y: 20 });
+  markerModal.show();
+  gsap.timeline({ delay: 0.2 }).to(modalBody.children,{ opacity: 1,y: 0,duration: 0.4,stagger: 0.2,ease: "power2.out" });
+  document.getElementById('markerModal').addEventListener('hidden.bs.modal', () => {
+    gsap.to(camera,{ fov: baseFOV,duration: 0.8,ease: "power2.inOut",onUpdate: () => camera.updateProjectionMatrix() });
+  }, {once: true});
+}
+function updateMarker(markerData) {
+  const markerElement = document.getElementById(markerData.id);
+  if (markerVisibilityState[markerData.id] === false) {
+    markerElement.style.opacity = 0;
+    markerElement.style.pointerEvents = "none";
+    return;
+  }
+  let opacity = 0;
+  if (currentScrollValue >= markerData.fadeInStart && currentScrollValue <= markerData.fullyVisible) {
+    opacity = (currentScrollValue - markerData.fadeInStart) / Math.max(0.000001,(markerData.fullyVisible - markerData.fadeInStart));
+  } else if (currentScrollValue > markerData.fullyVisible && currentScrollValue < markerData.fadeOutStart) {
+    opacity = 1;
+  } else if (currentScrollValue >= markerData.fadeOutStart && currentScrollValue <= markerData.fadeOutEnd) {
+    opacity = 1 - (currentScrollValue - markerData.fadeOutStart) / Math.max(0.000001,(markerData.fadeOutEnd - markerData.fadeOutStart));
+  }
+  const vector = markerData.position.clone();
+  vector.project(camera);
+  const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+  markerElement.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+  const inViewport = (vector.z < 1 && vector.x > -1 && vector.x < 1 && vector.y > -1 && vector.y < 1);
+  markerElement.style.opacity = inViewport ? opacity : 0;
+  markerElement.style.pointerEvents = (inViewport && opacity > 0.6) ? "auto" : "none";
+}
+markers.forEach(marker => {
+  const markerElement = document.getElementById(marker.id);
+  markerVisibilityState[marker.id] = true;
+  markerElement.addEventListener("click", () => {
+    gsap.to(markerElement,{ opacity: 0,duration: 0.3,ease: "power1.out",onComplete: () => { markerVisibilityState[marker.id] = false; } });
+    gsap.fromTo(markerElement,{ scale: 1 },{ scale: 0.92,duration: 0.08,yoyo: true,repeat: 1,ease: "power1.inOut" });
+    if (marker.id === "marker1" && hoodAction) {
+      hoodAction.reset();hoodAction.timeScale = 1;hoodAction.paused = false;hoodAction.play();
+      isHoodAnimationPlaying = true;isHoodAnimationReversing = false;
+    }
+    currentMarkerId = marker.id;
+    showModal(marker.title, marker.content);
+  });
+});
+
+// Slider snap menu
+function centerActiveSnapButton() {
+  const activeButton = document.querySelector('.snap-btn.active');
+  const menu = document.getElementById('snap-menu');
+  if (!activeButton || !menu) return;
+
+  setTimeout(() => {
+    const menuRect = menu.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+    const targetScrollLeft =
+      menu.scrollLeft +
+      (buttonRect.left - menuRect.left) -
+      (menuRect.width / 2 - buttonRect.width / 2);
+
+    gsap.to(menu, {
+      scrollTo: { x: targetScrollLeft },
+      duration: 0.5,
+      ease: "power2.out"
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.domElement.style.touchAction = 'none';
-    container.appendChild(renderer.domElement);
+  }, 50);
+}
 
-    // Scena e camera (ortografica per effetto 2D piatto)
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x151515);
 
-    let aspect = window.innerWidth / window.innerHeight; // let per poterlo aggiornare
-    const camera = new THREE.OrthographicCamera(-aspect, aspect, 1, -1, 0.1, 1000);
-    camera.position.z = 5;
-    camera.lookAt(0, 0, 0);
+function updateSnapMenu() {
+  const buttons = document.querySelectorAll('.snap-btn');
+  let activeFound = false;
+  buttons.forEach(button => {
+    const snapValue = parseFloat(button.dataset.snap);
+    const isActive = Math.abs(currentScrollValue - snapValue) < snapThreshold;
+    if (isActive) {
+      button.classList.add('active');
+      activeFound = true;
+    } else {
+      button.classList.remove('active');
+    }
+  });
+  if (activeFound) centerActiveSnapButton();
+}
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
-    scene.add(ambientLight);
-
-    // === Creazione texture asfalto realistica (canvas) ===
-    function createAsphaltTexture() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1024;
-      canvas.height = 1024;
-      const ctx = canvas.getContext('2d');
-
-      // Base scura
-      ctx.fillStyle = '#1a1a1a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Rumore granuloso
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        const n = Math.random() * 60;
-        data[i] = Math.max(0, data[i] - n);
-        data[i + 1] = Math.max(0, data[i + 1] - n);
-        data[i + 2] = Math.max(0, data[i + 2] - n);
-        if (Math.random() > 0.95) {
-          data[i] = 120; data[i + 1] = 120; data[i + 2] = 120;
-        }
+// Gestione click sugli snap button - Versione migliorata
+document.querySelectorAll('.snap-btn').forEach(button => {
+  button.addEventListener('click', () => {
+    const snapValue = parseFloat(button.dataset.snap);
+    
+    // Animazione smooth verso lo snap point
+    gsap.to({}, {
+      duration: 1.2, // Durata dell'animazione
+      ease: "power2.inOut",
+      onStart: () => {
+        isSnappingFromMenu = true;
+        targetScrollValue = snapValue;
+        document.querySelectorAll('.snap-btn').forEach(b => b.classList.remove('active'));
+        button.classList.add('active');
+        centerActiveSnapButton();
+      },
+      onUpdate: () => {
+        // Forza l'aggiornamento durante l'animazione
+      },
+      onComplete: () => {
+        isSnappingFromMenu = false;
       }
-      ctx.putImageData(imageData, 0, 0);
+    });
+  });
+});
 
-      // Crepe e venature
-      ctx.strokeStyle = '#0a0a0a';
-      ctx.lineWidth = 2;
-      for (let i = 0; i < 25; i++) {
-        ctx.beginPath();
-        const x1 = Math.random() * canvas.width;
-        const y1 = Math.random() * canvas.height;
-        ctx.moveTo(x1, y1);
-        for (let j = 0; j < 5; j++) {
-          const x2 = x1 + (Math.random() - 0.5) * 100;
-          const y2 = y1 + (Math.random() - 0.5) * 100;
-          ctx.lineTo(x2, y2);
-        }
-        ctx.stroke();
+
+
+// Variabili per il configuratore
+let currentModel = null;
+let currentModelIndex = 0;
+const modelConfigs = [
+  { 
+    path: "./assets/DEMO/3D/cilindro.glb", 
+    name: "Cilindro"
+  },
+  { 
+    path: "./assets/DEMO/3D/sfera.glb", 
+    name: "Sfera"
+  },
+  { 
+    path: "./assets/DEMO/3D/cubo.glb", 
+    name: "Cubo"
+  }
+];
+
+// Funzione per caricare un modello nel configuratore
+function loadConfiguratorModel(modelIndex) {
+  // Rimuovi il modello precedente se esiste
+  if (currentModel) {
+    scene.remove(currentModel);
+    currentModel = null;
+  }
+  
+  const modelConfig = modelConfigs[modelIndex];
+  
+  // Carica il nuovo modello
+  loader.load(modelConfig.path, (gltf) => {
+    currentModel = gltf.scene;
+    
+    // MANTIENE LE COORDINATE ORIGINALI DI BLENDER
+    // Non applicare trasformazioni aggiuntive
+    
+    // Aggiungi il modello alla scena
+    scene.add(currentModel);
+    
+    // Aggiorna il nome del modello visualizzato
+    document.getElementById('current-model-name').textContent = modelConfig.name;
+    
+    // Aggiungi ombre al modello
+    currentModel.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
       }
+    });
+  });
+}
 
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(1.5, 1.5);
-      return texture;
+// Funzione per cambiare modello (avanti/indietro)
+function changeModel(direction) {
+  currentModelIndex += direction;
+  
+  // Gestisci il ciclo dei modelli
+  if (currentModelIndex < 0) {
+    currentModelIndex = modelConfigs.length - 1;
+  } else if (currentModelIndex >= modelConfigs.length) {
+    currentModelIndex = 0;
+  }
+  
+  // Carica il nuovo modello
+  loadConfiguratorModel(currentModelIndex);
+}
+
+// Inizializza il configuratore
+function initConfigurator() {
+  // Aggiungi event listener per le frecce
+  document.getElementById('prev-model').addEventListener('click', () => {
+    changeModel(-1);
+  });
+  
+  document.getElementById('next-model').addEventListener('click', () => {
+    changeModel(1);
+  });
+  
+  // Carica il primo modello (cilindro) all'avvio
+  loadConfiguratorModel(0);
+}
+
+// Funzione per aggiornare la visibilità del configuratore in base allo scroll
+function updateConfiguratorVisibility() {
+  const configurator = document.getElementById('configurator');
+  let opacity = 0;
+  
+  if (currentScrollValue >= configuratorVisibility.fadeInStart && 
+      currentScrollValue <= configuratorVisibility.fullyVisible) {
+    // Fase di fade in
+    opacity = (currentScrollValue - configuratorVisibility.fadeInStart) / 
+              Math.max(0.000001, (configuratorVisibility.fullyVisible - configuratorVisibility.fadeInStart));
+  } 
+  else if (currentScrollValue > configuratorVisibility.fullyVisible && 
+           currentScrollValue < configuratorVisibility.fadeOutStart) {
+    // Completamente visibile
+    opacity = 1;
+  } 
+  else if (currentScrollValue >= configuratorVisibility.fadeOutStart && 
+           currentScrollValue <= configuratorVisibility.fadeOutEnd) {
+    // Fase di fade out
+    opacity = 1 - (currentScrollValue - configuratorVisibility.fadeOutStart) / 
+              Math.max(0.000001, (configuratorVisibility.fadeOutEnd - configuratorVisibility.fadeOutStart));
+  }
+  
+  // Applica l'opacità e disabilita l'interazione quando trasparente
+  configurator.style.opacity = opacity;
+  configurator.style.pointerEvents = (opacity > 0.6) ? 'auto' : 'none';
+}
+
+// === TUTORIAL OVERLAY ===
+const tutorialOverlay = document.getElementById("tutorialOverlay");
+const tutorialAnimation = document.getElementById("tutorialAnimation");
+const tutorialText = document.getElementById("tutorialText");
+
+function showTutorial() {
+  const isMobileWidth = window.innerWidth <= 991;
+  isTutorialActive = true; // 👈 blocca lo scroll
+  tutorialOverlay.classList.add("show");
+
+  if (isMobileWidth) {
+    tutorialAnimation.className = "tutorial-animation touch-scroll";
+    tutorialText.textContent = "Scorri con il dito per esplorare l'ambiente";
+  } else {
+    tutorialAnimation.className = "tutorial-animation mouse-scroll";
+    tutorialText.textContent = "Usa la rotellina del mouse per muoverti";
+  }
+
+  // Nascondi automaticamente dopo alcuni secondi
+  setTimeout(() => {
+    tutorialOverlay.classList.remove("show");
+    isTutorialActive = false; // 👈 riattiva lo scroll
+  }, 6000);
+}
+
+
+
+
+
+
+
+// Animate function - Versione migliorata
+function animate() {
+  requestAnimationFrame(animate);
+  
+  if (isSnappingFromMenu) {
+    // Animazione smooth verso lo snap point selezionato dal menu
+    const diff = targetScrollValue - currentScrollValue;
+    currentScrollValue += diff * 0.01; // Fattore di smoothing aumentato
+    
+    // Se siamo molto vicini al target, considera il movimento completato
+    if (Math.abs(diff) < 0.0005) {
+      currentScrollValue = targetScrollValue;
     }
-
-    const asphaltTexture = createAsphaltTexture();
-    const asphaltGeometry = new THREE.PlaneGeometry(aspect * 2, 2);
-    const asphaltMaterial = new THREE.MeshBasicMaterial({ map: asphaltTexture });
-    const asphalt = new THREE.Mesh(asphaltGeometry, asphaltMaterial);
-    scene.add(asphalt);
-
-    // === SISTEMA DI DISEGNO CON EFFETTO GESSETTO (stile originale mantenuto) ===
-    let drawing = false;
-    let currentColor = '#ff3c3c'; // colore iniziale
-    let brushSize = 4;
-    const chalkElements = [];
-
-    function createChalkMaterial(color, opacity = 0.9) {
-      return new THREE.MeshBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: opacity,
-        depthWrite: false
-      });
-    }
-
-    // Converte coordinate schermo -> mondo (aggiorna aspect correttamente)
-    function screenToWorld(x, y) {
-      const rect = renderer.domElement.getBoundingClientRect();
-      const worldX = ((x - rect.left) / rect.width) * 2 - 1;
-      const worldY = -((y - rect.top) / rect.height) * 2 + 1;
-
-      return new THREE.Vector3(
-        worldX * aspect,
-        worldY,
-        0.1 // leggermente davanti all'asfalto
-      );
-    }
-
-    // Crea particella di gesso complessa (main, alone, micro-particles)
-    function createChalkParticle(position, color) {
-      const group = new THREE.Group();
-
-      // Particella principale (centro opaco)
-      const mainSize = 0.01;
-      const mainGeometry = new THREE.CircleGeometry(mainSize, 12);
-      const mainMaterial = createChalkMaterial(color, 0.7 + Math.random() * 0.3);
-      const mainParticle = new THREE.Mesh(mainGeometry, mainMaterial);
-      group.add(mainParticle);
-
-      // Alone polveroso (ring)
-      const haloSize = mainSize * (1.5 + brushSize * 0.3);
-      const haloGeometry = new THREE.RingGeometry(haloSize * 0.3, haloSize, 16);
-      const haloMaterial = createChalkMaterial(color, 0.18 + Math.random() * 0.22);
-      const halo = new THREE.Mesh(haloGeometry, haloMaterial);
-      // posizioniamo leggermente dietro per evitare z-fighting visivo
-      halo.position.z = -0.001;
-      group.add(halo);
-
-      // Micro particelle sparse attorno
-      const microParticlesCount = Math.max(1, Math.floor(brushSize * 0.8));
-      for (let i = 0; i < microParticlesCount; i++) {
-        const microSize = mainSize * (0.18 + Math.random() * 0.45);
-        const microGeometry = new THREE.CircleGeometry(microSize, 6);
-        const microMaterial = createChalkMaterial(color, 0.35 + Math.random() * 0.35);
-        const microParticle = new THREE.Mesh(microGeometry, microMaterial);
-
-        microParticle.position.set(
-          (Math.random() - 0.5) * haloSize * 1.3,
-          (Math.random() - 0.5) * haloSize * 1.3,
-          (Math.random() - 0.5) * 0.001
-        );
-        microParticle.rotation.z = Math.random() * Math.PI * 2;
-        group.add(microParticle);
-      }
-
-      // Leggera variazione di posizione/rotazione per naturalezza
-      group.position.set(
-        position.x + (Math.random() - 0.5) * 0.02,
-        position.y + (Math.random() - 0.5) * 0.02,
-        position.z + Math.random() * 0.05
-      );
-      group.rotation.z = Math.random() * Math.PI * 2;
-
-      scene.add(group);
-      chalkElements.push(group);
-
-      return group;
-    }
-
-    // Disegna una traccia tra start ed end generando particelle in base a distanza e brushSize
-    function drawChalkStroke(start, end, color) {
-      const distance = Math.sqrt(
-        Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
-      );
-
-      // Numero segmenti dipende da distanza e dimensione pennello
-      const segments = Math.max(3, Math.floor(distance * 30 * (brushSize / 4)));
-
-      // Densità per randomizzare presenza particelle
-      const density = 1.0;
-
-      for (let i = 0; i <= segments; i++) {
-        const t = i / segments;
-        const point = new THREE.Vector3();
-        point.lerpVectors(start, end, t);
-
-        // Rumore sul tracciato per effetto naturale
-        point.x += (Math.random() - 0.5) * 0.01;
-        point.y += (Math.random() - 0.5) * 0.01;
-        point.z = 0.1 + Math.random() * 0.05;
-
-        if (Math.random() < density) {
-          createChalkParticle(point, color);
-        }
+  } else {
+    // Comportamento originale per lo scroll normale
+    const diff = targetScrollValue - currentScrollValue;
+    currentScrollValue += diff * smoothFactor;
+    
+    // Snap naturale durante lo scrolling
+    for (let snap of snapPoints) {
+      if (Math.abs(currentScrollValue - snap) < snapThreshold) {
+        targetScrollValue = THREE.MathUtils.lerp(targetScrollValue, snap, 0.02);
       }
     }
+  }
 
-    // Gestione input (mouse + touch)
-    let lastPoint = null;
-
-    function handleStart(x, y) {
-      drawing = true;
-      const point = screenToWorld(x, y);
-      lastPoint = point;
-      createChalkParticle(point, currentColor);
+  
+  if (mixer && action) {
+    let duration = action.getClip().duration;
+    mixer.setTime(currentScrollValue * duration);
+    if (dummyCamera) {
+      camera.position.copy(dummyCamera.position);
+      camera.quaternion.copy(dummyCamera.quaternion);
     }
-
-    function handleMove(x, y) {
-      if (!drawing || !lastPoint) return;
-      const point = screenToWorld(x, y);
-      drawChalkStroke(lastPoint, point, currentColor);
-      lastPoint = point;
+  }
+  
+  if (hoodMixer) {
+    const delta = 0.016;
+    hoodMixer.update(delta);
+    if (isHoodAnimationPlaying && !isHoodAnimationReversing && hoodAction.time >= hoodAnimationDuration) hoodAction.paused = true;
+    if (isHoodAnimationReversing && hoodAction.time <= 0) {
+      hoodAction.paused = true;
+      isHoodAnimationPlaying = false;
+      isHoodAnimationReversing = false;
     }
+  }
+  
+  markers.forEach(updateMarker);
+  updateSnapMenu();
+  updateConfiguratorVisibility(); // AGGIUNGI QUESTA RIGA
+  renderer.render(scene, camera);
+}
+animate();
 
-    function handleEnd() {
-      drawing = false;
-      lastPoint = null;
-    }
 
-    // Mouse events
-    renderer.domElement.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      handleStart(e.clientX, e.clientY);
-    });
-    renderer.domElement.addEventListener('mousemove', (e) => {
-      e.preventDefault();
-      handleMove(e.clientX, e.clientY);
-    });
-    window.addEventListener('mouseup', (e) => {
-      e.preventDefault();
-      handleEnd();
-    });
+// Resize
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+let lastTap = 0;
+document.addEventListener('touchend', function(event) {
+  const currentTime = new Date().getTime();
+  if (currentTime - lastTap < 300 && currentTime - lastTap > 0) event.preventDefault();
+  lastTap = currentTime;
+}, false);
+document.addEventListener('contextmenu', event => event.preventDefault());
+</script>
 
-    // Touch events (corretti)
-    renderer.domElement.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (e.touches.length === 1) {
-        const t = e.touches[0];
-        handleStart(t.clientX, t.clientY);
-      }
-    }, { passive: false });
 
-    renderer.domElement.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (e.touches.length === 1) {
-        const t = e.touches[0];
-        handleMove(t.clientX, t.clientY);
-      }
-    }, { passive: false });
-
-    renderer.domElement.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      handleEnd();
-    });
-
-    renderer.domElement.addEventListener('touchcancel', (e) => {
-      e.preventDefault();
-      handleEnd();
-    });
-
-    // Previene menu contestuale
-    renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
-
-    // === CONTROLLI UI ===
-    document.getElementById('clearBtn').onclick = () => {
-      chalkElements.forEach(el => {
-        // rimuoviamo dal mondo (non obbligatorio il dispose completo qui)
-        scene.remove(el);
-      });
-      chalkElements.length = 0;
-    };
-
-    document.getElementById('saveBtn').onclick = () => {
-      const link = document.createElement('a');
-      link.download = 'gessetto_asfalto.png';
-      link.href = renderer.domElement.toDataURL('image/png');
-      link.click();
-    };
-
-    // Colori / selettore gessetti (bottom)
-    document.querySelectorAll('.chalk-option').forEach(option => {
-      option.addEventListener('click', () => {
-        document.querySelectorAll('.chalk-option').forEach(opt => opt.classList.remove('active'));
-        option.classList.add('active');
-        currentColor = option.getAttribute('data-color') || '#ffffff';
-      });
-      // supporto touch: stessa cosa (utile su alcuni browser)
-      option.addEventListener('touchstart', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        document.querySelectorAll('.chalk-option').forEach(opt => opt.classList.remove('active'));
-        option.classList.add('active');
-        currentColor = option.getAttribute('data-color') || '#ffffff';
-      }, { passive: false });
-    });
-
-    // Brush size control
-    document.getElementById('brushSize').addEventListener('input', (e) => {
-      brushSize = parseFloat(e.target.value);
-    });
-
-    // Resize handler: aggiorna renderer, camera, aspect e dimensione piano asfalto
-    function handleResize() {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      aspect = width / height;
-
-      renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-      camera.left = -aspect;
-      camera.right = aspect;
-      camera.updateProjectionMatrix();
-
-      // aggiorna il piano asfalto
-      const newGeometry = new THREE.PlaneGeometry(aspect * 2, 2);
-      asphalt.geometry.dispose();
-      asphalt.geometry = newGeometry;
-
-      // opzionale: aggiorna lo repeat se vuoi mantenere scala costante
-      asphaltTexture.repeat.set(1.5, 1.5);
-    }
-    window.addEventListener('resize', handleResize);
-
-    // Loop di rendering
-    function animate() {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    }
-    animate();
-  </script>
 </body>
 </html>
