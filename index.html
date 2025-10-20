@@ -572,7 +572,7 @@
 <!-- Menu Snap Points -->
   <div id="snap-menu">
     <div id="snap-menu-inner">
-      <button class="snap-btn" data-snap="0.001">1</button>
+      <button class="snap-btn" data-snap="0.001">1. Cucina</button>
       <button class="snap-btn" data-snap="0.35">2. Salotto</button>
       <button class="snap-btn" data-snap="0.5">3. Sala</button>
       <button class="snap-btn" data-snap="0.6">4. Ingresso</button>
@@ -684,10 +684,10 @@ let isSnappingFromMenu = false;
 
 // Configuratore - proprietà di visibilità
 const configuratorVisibility = {
-  fadeInStart: 0.58,
-  fullyVisible: 0.59,
-  fadeOutStart: 0.62,
-  fadeOutEnd: 0.63
+  fadeInStart: 0.34,
+  fullyVisible: 0.35,
+  fadeOutStart: 0.36,
+  fadeOutEnd: 0.37
 };
 
 // Variabili per gestire lo scroll
@@ -784,11 +784,11 @@ loader.load("./assets/DEMO/camera_paths.glb", (gltf) => {
 });
 
 // Luci
-scene.add(new THREE.AmbientLight(0xffffff, 2));
+scene.add(new THREE.AmbientLight(0xffffff, 1));
 const fillLight = new THREE.DirectionalLight(0xffffff, 1);
 fillLight.position.set(-5, 5, -5);
 scene.add(fillLight);
-const rimLight = new THREE.DirectionalLight(0xffaa33, 1);
+const rimLight = new THREE.DirectionalLight(0xffffff, 1); //luce riflessi che influisce sugli oggetti non bakati
 rimLight.position.set(-3, 2, 3);
 scene.add(rimLight);
 
@@ -1019,16 +1019,12 @@ let currentModel = null;
 let currentModelIndex = 0;
 const modelConfigs = [
   { 
-    path: "./assets/DEMO/3D/cilindro.glb", 
-    name: "Cilindro"
+    path: "./assets/DEMO/3D/lampada_1.glb", 
+    name: "Lampada 1"
   },
   { 
-    path: "./assets/DEMO/3D/sfera.glb", 
-    name: "Sfera"
-  },
-  { 
-    path: "./assets/DEMO/3D/cubo.glb", 
-    name: "Cubo"
+    path: "./assets/DEMO/3D/Lampada_2.glb", 
+    name: "Lampada 2"
   }
 ];
 
